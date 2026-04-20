@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">CinéTransat</string>
+    <string name="tab_program">Programme</string>
+    <string name="tab_watchlist">Liste</string>
+    <string name="tab_info">Infos</string>
+    <string name="tab_festival">Festival</string>
+    <string name="tab_settings">Réglages</string>
+
+    <string name="settings_title">Réglages</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_hint">Choisissez la langue de l’application.</string>
+    <string name="language_french">Français</string>
+    <string name="language_english">English</string>
+    <string name="settings_about_app">À propos de l\'app</string>
+    <string name="settings_about_app_body">CinéTransat est une app non officielle de démonstration pour consulter le programme, les infos pratiques et votre liste de films.</string>
+    <string name="settings_rate_this_app">Noter cette app</string>
+    <string name="settings_rate_this_app_hint">Donnez-nous votre avis sur le store.</string>
+    <string name="settings_rate_now">Noter</string>
+</resources>
