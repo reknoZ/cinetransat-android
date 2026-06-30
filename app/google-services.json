@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "810844750065",
+    "project_id": "cinetransat-497ce",
+    "storage_bucket": "cinetransat-497ce.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:810844750065:android:064d111abacdde7eeba950",
+        "android_client_info": {
+          "package_name": "com.heewhack.cinetransat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBi3zWTEjmLXw2QY3TZbx157fqqc7PVwG0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

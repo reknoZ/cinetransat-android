@@ -11,9 +11,37 @@
     <string name="settings_language_hint">Choose the app language.</string>
     <string name="language_french">French</string>
     <string name="language_english">English</string>
-    <string name="settings_about_app">About the app</string>
-    <string name="settings_about_app_body">CinéTransat is an unofficial demo app to browse the program, practical info, and your movie watch list.</string>
+    <string name="settings_about_app">About CinéTransat</string>
+    <string name="settings_about_version_label">Version</string>
+    <string name="settings_copyright">Copyright © 2026 David Nitzsche-Bell</string>
+    <string name="settings_send_feedback">Send feedback</string>
     <string name="settings_rate_this_app">Rate this app</string>
-    <string name="settings_rate_this_app_hint">Tell us what you think on the store.</string>
-    <string name="settings_rate_now">Rate now</string>
+
+    <string name="settings_cancellation_alerts_on">Cancellation alerts on</string>
+    <string name="settings_cancellation_alerts_off">Cancellation alerts off</string>
+    <string name="settings_notifications_help">Get notified when a screening is canceled (rain or wind), even when the app is closed.</string>
+    <string name="settings_notifications_denied">Allow notifications in Android Settings to receive alerts.</string>
+
+    <string name="detail_screening_canceled">Screening canceled</string>
+    <string name="detail_duration_variable">Variable</string>
+    <string name="detail_sunset">Sunset</string>
+    <string name="detail_start">Screening start</string>
+    <string name="detail_duration">Duration</string>
+    <string name="detail_legal_age">Legal age</string>
+    <string name="detail_recommended_age">Recommended age</string>
+    <string name="detail_references">References</string>
+    <string name="detail_search_imdb">Search on IMDb</string>
+    <string name="detail_search_allocine">Search on Allociné</string>
+    <string name="detail_watchlist_others_one">1 other also added it</string>
+    <string name="detail_watchlist_others_many">%d others also added it</string>
+    <string name="detail_watchlist_interest_one">1 person added it to their watch list</string>
+    <string name="detail_watchlist_interest_many">%d people added it to their watch list</string>
+    <string name="watchlist_others_one">1 other added it too</string>
+    <string name="watchlist_others_many">%d others added it too</string>
+
+    <string name="notification_cancel_title">Screening canceled</string>
+    <string name="notification_cancel_body">%1$s — %2$s. Canceled due to weather.</string>
+    <string name="notification_cancel_body_remote">%1$s. Canceled due to weather.</string>
+    <string name="notification_channel_cancellations">Screening cancellations</string>
+    <string name="notification_channel_cancellations_desc">Alerts when a screening is canceled due to weather</string>
 </resources>

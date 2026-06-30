@@ -11,9 +11,37 @@
     <string name="settings_language_hint">Choisissez la langue de l’application.</string>
     <string name="language_french">Français</string>
     <string name="language_english">English</string>
-    <string name="settings_about_app">À propos de l\'app</string>
-    <string name="settings_about_app_body">CinéTransat est une app non officielle de démonstration pour consulter le programme, les infos pratiques et votre liste de films.</string>
+    <string name="settings_about_app">À propos de CinéTransat</string>
+    <string name="settings_about_version_label">Version</string>
+    <string name="settings_copyright">Copyright © 2026 David Nitzsche-Bell</string>
+    <string name="settings_send_feedback">Envoyer un commentaire</string>
     <string name="settings_rate_this_app">Noter cette app</string>
-    <string name="settings_rate_this_app_hint">Donnez-nous votre avis sur le store.</string>
-    <string name="settings_rate_now">Noter</string>
+
+    <string name="settings_cancellation_alerts_on">Alertes d\'annulation activées</string>
+    <string name="settings_cancellation_alerts_off">Alertes d\'annulation désactivées</string>
+    <string name="settings_notifications_help">Recevez une notification si une séance est annulée (pluie ou vent), même lorsque l’app est fermée.</string>
+    <string name="settings_notifications_denied">Autorisez les notifications dans les réglages Android pour recevoir les alertes.</string>
+
+    <string name="detail_screening_canceled">Séance annulée</string>
+    <string name="detail_duration_variable">Variable</string>
+    <string name="detail_sunset">Coucher du soleil</string>
+    <string name="detail_start">Début de la projection</string>
+    <string name="detail_duration">Durée</string>
+    <string name="detail_legal_age">Âge légal</string>
+    <string name="detail_recommended_age">Âge suggéré</string>
+    <string name="detail_references">Références</string>
+    <string name="detail_search_imdb">Recherche sur IMDb</string>
+    <string name="detail_search_allocine">Recherche sur Allociné</string>
+    <string name="detail_watchlist_others_one">1 autre l\'a aussi ajouté</string>
+    <string name="detail_watchlist_others_many">%d autres l\'ont aussi ajouté</string>
+    <string name="detail_watchlist_interest_one">1 personne l\'a ajouté à sa liste</string>
+    <string name="detail_watchlist_interest_many">%d personnes l\'ont ajouté à leur liste</string>
+    <string name="watchlist_others_one">1 autre l\'a aussi ajouté</string>
+    <string name="watchlist_others_many">%d autres l\'ont aussi ajouté</string>
+
+    <string name="notification_cancel_title">Séance annulée</string>
+    <string name="notification_cancel_body">%1$s — %2$s. Séance annulée (intempéries).</string>
+    <string name="notification_cancel_body_remote">%1$s. Séance annulée (intempéries).</string>
+    <string name="notification_channel_cancellations">Annulations de séances</string>
+    <string name="notification_channel_cancellations_desc">Alertes lorsqu’une séance est annulée pour cause d’intempéries</string>
 </resources>
