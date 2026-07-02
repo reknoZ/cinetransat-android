@@ -112,7 +112,7 @@ private fun ScreeningFactsRow(
             durationMuted = true
         }
         else -> {
-            durationValue = "$minutes min"
+            durationValue = stringResource(R.string.detail_duration_minutes, minutes)
             durationMuted = false
         }
     }
@@ -225,7 +225,10 @@ fun MovieDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.detail_back),
+                        )
                     }
                 },
                 windowInsets = androidx.compose.foundation.layout.WindowInsets(0),
@@ -301,7 +304,7 @@ private fun DetailBody(
             ) {
                 Icon(
                     imageVector = Icons.Filled.ChevronLeft,
-                    contentDescription = "Film précédent",
+                    contentDescription = stringResource(R.string.detail_previous_film),
                     modifier = Modifier.size(28.dp),
                 )
             }
@@ -327,7 +330,12 @@ private fun DetailBody(
                     ) {
                         Icon(
                             imageVector = if (inWatchList) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                            contentDescription = if (inWatchList) "Retirer de la liste" else "Ajouter à la liste",
+                            contentDescription =
+                                if (inWatchList) {
+                                    stringResource(R.string.watchlist_remove)
+                                } else {
+                                    stringResource(R.string.watchlist_add)
+                                },
                             modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.primary,
                         )
@@ -345,7 +353,7 @@ private fun DetailBody(
             ) {
                 Icon(
                     imageVector = Icons.Filled.ChevronRight,
-                    contentDescription = "Film suivant",
+                    contentDescription = stringResource(R.string.detail_next_film),
                     modifier = Modifier.size(28.dp),
                 )
             }

@@ -40,23 +40,31 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.heewhack.cinetransat.R
+import com.heewhack.cinetransat.ui.LocalFestivalProgramStore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UsefulInfoScreen(modifier: Modifier = Modifier) {
     val expanded = remember { mutableStateMapOf<String, Boolean>() }
+    val programStore = LocalFestivalProgramStore.current
+    val programState by programStore.state.collectAsStateWithLifecycle()
+    val sections = cinetransatInfosSections(programState.publicConfig.currentSeasonYear)
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            CenterAlignedTopAppBar(title = { Text("Infos pratiques") })
+            CenterAlignedTopAppBar(title = { Text(stringResource(R.string.info_nav_title)) })
         },
     ) { innerPadding ->
         LazyColumn(
@@ -66,7 +74,7 @@ fun UsefulInfoScreen(modifier: Modifier = Modifier) {
                     .fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            items(cinetransatInfosSections, key = { it.id }) { section ->
+            items(sections, key = { it.id }) { section ->
                 val isOpen = expanded[section.id] == true
                 Column(
                     modifier =

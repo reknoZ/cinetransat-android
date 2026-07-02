@@ -66,7 +66,6 @@ fun SettingsScreen(
             AppLanguage.Fr -> "fr"
         }
     val seasonYear = programState.publicConfig.currentSeasonYear
-    val isFrench = appLanguage == AppLanguage.Fr
     val languageOptions =
         listOf(
             "fr" to stringResource(R.string.language_french),
@@ -238,7 +237,7 @@ fun SettingsScreen(
                     TextButton(
                         onClick = {
                             runCatching {
-                                AppSupport.openFeedback(context, seasonYear, isFrench)
+                                AppSupport.openFeedback(context, seasonYear)
                             }
                         },
                         modifier = Modifier.weight(1f),

@@ -15,9 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.heewhack.cinetransat.data.FestivalProgramData
+import com.heewhack.cinetransat.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +27,7 @@ fun AboutFestivalScreen(modifier: Modifier = Modifier) {
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            CenterAlignedTopAppBar(title = { Text("À propos") })
+            CenterAlignedTopAppBar(title = { Text(stringResource(R.string.about_title)) })
         },
     ) { innerPadding ->
         Column(
@@ -47,20 +48,12 @@ fun AboutFestivalScreen(modifier: Modifier = Modifier) {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = "CinéTransat",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
                 )
                 Text(
-                    text =
-                        "Six semaines, quatre soirs par semaine : cinéma en plein air après le coucher du soleil.",
+                    text = stringResource(R.string.about_intro),
                     style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text =
-                        "Les données affichées reprennent un programme type (saison ${FestivalProgramData.DEMO_YEAR}) " +
-                            "pour le développement : remplacez-les par votre JSON ou votre CMS lorsque le programme officiel est prêt.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

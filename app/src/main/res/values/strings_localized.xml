@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_ok">OK</string>
+    <string name="action_retry">Retry</string>
+    <string name="program_unavailable">Program unavailable.</string>
+
+    <string name="watchlist_add">Add to watch list</string>
+    <string name="watchlist_remove">Remove from watch list</string>
+    <string name="watchlist_screen_title">Watch list</string>
+    <string name="watchlist_empty_title">Nothing on your watch list yet</string>
+    <string name="watchlist_empty_body">Tap the bookmark icon on a poster in Program to mark a screening you plan to see. You can also use the bookmark at the top of the Detail screen.</string>
+
+    <string name="detail_back">Back</string>
+    <string name="detail_previous_film">Previous film</string>
+    <string name="detail_next_film">Next film</string>
+    <string name="detail_duration_minutes">%1$d min</string>
+
+    <string name="about_title">About</string>
+    <string name="about_intro">Six weeks in summer, four nights each week: free open-air cinema after sunset.</string>
+
+    <string name="info_nav_title">Practical info</string>
+    <string name="info_free_title">Free screenings</string>
+    <string name="info_free_body">CinéTransat screenings take place in the public park at La Perle du Lac in Geneva and are free of charge. Everyone is welcome and no reservation is required!</string>
+    <string name="info_schedule_title">Days and times</string>
+    <string name="info_schedule_body">Screenings run Thursday through Sunday, from 9 July to 16 August %1$d.\n\nFilms start at nightfall, between 10:00 p.m. (mid-July) and 9:15 p.m. (late August).\n\nBar, deck chair rental, and activities from 7:00 p.m.\n\nEvenings end around midnight.</string>
+    <string name="info_age_title">Age ratings</string>
+    <string name="info_age_body">Legal viewing ages for films range from 7 to 16.\n\nPlease follow these guidelines and do not bring children younger than the stated rating. Checks may be carried out by the juvenile brigade.</string>
+    <string name="info_languages_title">Languages and subtitles</string>
+    <string name="info_languages_body">Films are shown in their original language to preserve the work and its cultural context. As Geneva is an international city, we aim to reach all audiences and communities represented.\n\nIn general, French-language films are subtitled in English; all other films are subtitled in French.\n\nLanguages and subtitles are listed in the program.</string>
+    <string name="info_bar_title">Bar and picnics</string>
+    <string name="info_bar_body">The CinéTransat bar serves drinks only. Payment by cash, card, or Twint. No food is sold on site. You may bring your own drinks and picnics.\n\nPlease note: barbecues are not allowed in the park.</string>
+    <string name="info_deckchairs_title">Deck chair rental</string>
+    <string name="info_deckchairs_body">Deck chairs are available to rent for 5 CHF on every screening day as of 7:00 p.m. Payment by cash, card, or Twint. The number of deck chairs is limited.\n\nSeating in the park is open. Bring warm clothes and a blanket; evenings can get cool.</string>
+    <string name="info_transport_title">Getting there and public transport</string>
+    <string name="info_transport_body">Venue: La Perle du Lac park, rue de Lausanne, 1202 Geneva.\n\nCinéTransat encourages you to come by public transport, on foot, or by bike.\n\nTram: line 15, Butini stop. Bus: lines 1 and 25, De-Chateaubriand or Perle du Lac stops. Train: Lancy-Pont-Rouge – Coppet line, Genève-Sécheron stop. Boat: M4 line, De-Chateaubriand stop. On foot: 15 min from Cornavin station or 5 min from les Bains des Pâquis.\n\nPlease note: some films may end after the last bus or tram.\n\nFor wheelchair access, contact us at info@cinetransat.ch. The path along the lower part of the park is wide, flat, and passable. Some inner paths have 10–12% slopes. There are no dedicated parking spaces right next to the site, but drop-off near the Restaurant de la Perle du Lac is possible.</string>
+    <string name="info_cancellations_title">Cancellations</string>
+    <string name="info_cancellations_body">Screenings are canceled in case of rain or strong wind. The decision is made no later than 7:30 p.m. on the day of the screening.\n\nUpdates are posted on the homepage of this website and on our Facebook or Instagram pages.\n\nUpdate notifications should appear in this app, if you authorized notifications.</string>
+    <string name="info_toilets_title">Toilets</string>
+    <string name="info_toilets_body">Dry toilets are available on the CinéTransat site, and public restrooms at the bottom of the park, 100 m and 300 m away, with wheelchair access.</string>
+    <string name="info_smoking_title">Smoking</string>
+    <string name="info_smoking_body">Please do not throw cigarette butts in the grass so we can keep the park clean after screenings. Out of consideration for others on the lawn, please refrain from smoking during the film.</string>
+    <string name="info_waste_title">Waste</string>
+    <string name="info_waste_body">Recycling areas are available in the park. Please use them after your picnic and take nothing away when you leave.</string>
+    <string name="info_dogs_title">Dogs</string>
+    <string name="info_dogs_body">If your pet can stay calm for the whole film and not disturb the screening, they are welcome. Dogs must be kept on a leash. Thank you for your understanding.</string>
+    <string name="info_bikes_title">Bicycles</string>
+    <string name="info_bikes_body">The site is accessible by bicycle.\n\nPlease do not lock bikes to the festival barriers.</string>
+    <string name="info_accessibility_title">Accessibility</string>
+    <string name="info_accessibility_body">CinéTransat is a temporary outdoor cinema in a park, so accessibility measures are harder to provide than in a regular theatre.\n\nThe lower lawn entrance is accessible for people with reduced mobility. Films do not have audio description or closed captions (CC). Foreign-language films are subtitled in French; French-language films are subtitled in English.\n\nWheelchair-accessible restrooms are at the bottom of the park, 300 m towards the Restaurant de la Perle du Lac. Visitors with reduced mobility can contact us for a cleared area on the lower lawn, assistance, or a reserved deck chair.\n\nFor any questions or specific needs, contact us and we will do our best to help: info@cinetransat.ch</string>
+</resources>

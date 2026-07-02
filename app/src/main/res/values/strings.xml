@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">CinéTransat</string>
     <string name="tab_program">Program</string>
-    <string name="tab_watchlist">Watch List</string>
+    <string name="tab_watchlist">Watchlist</string>
     <string name="tab_info">Info</string>
     <string name="tab_festival">Festival</string>
     <string name="tab_settings">Settings</string>
@@ -16,6 +16,8 @@
     <string name="settings_copyright">Copyright © 2026 David Nitzsche-Bell</string>
     <string name="settings_send_feedback">Send feedback</string>
     <string name="settings_rate_this_app">Rate this app</string>
+    <string name="settings_feedback_subject">CinéTransat — feedback</string>
+    <string name="settings_feedback_season">Season %1$d</string>
 
     <string name="settings_cancellation_alerts_on">Cancellation alerts on</string>
     <string name="settings_cancellation_alerts_off">Cancellation alerts off</string>
@@ -44,4 +46,8 @@
     <string name="notification_cancel_body_remote">%1$s. Canceled due to weather.</string>
     <string name="notification_channel_cancellations">Screening cancellations</string>
     <string name="notification_channel_cancellations_desc">Alerts when a screening is canceled due to weather</string>
+
+    <string name="program_season_title">Program %1$d</string>
+    <string name="program_week_short">Week %1$d</string>
+    <string name="program_week_header">Week %1$d • %2$s</string>
 </resources>

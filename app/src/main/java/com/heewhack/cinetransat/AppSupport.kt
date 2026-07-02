@@ -19,14 +19,8 @@ object AppSupport {
     fun feedbackMailtoUri(
         context: Context,
         seasonYear: Int,
-        isFrench: Boolean,
     ): Uri {
-        val subject =
-            if (isFrench) {
-                "Commentaire CinéTransat (Android)"
-            } else {
-                "CinéTransat feedback (Android)"
-            }
+        val subject = context.getString(R.string.settings_feedback_subject)
         val body =
             buildString {
                 appendLine()
@@ -35,7 +29,7 @@ object AppSupport {
                 append("CinéTransat ${versionName(context)}")
                 appendLine()
                 append("Android ${Build.VERSION.RELEASE} · ${Build.MODEL}")
-                append("Season $seasonYear")
+                append(context.getString(R.string.settings_feedback_season, seasonYear))
             }
         return Uri.parse(
             "mailto:$FEEDBACK_EMAIL?" +
@@ -46,10 +40,9 @@ object AppSupport {
     fun openFeedback(
         context: Context,
         seasonYear: Int,
-        isFrench: Boolean,
     ) {
         val intent =
-            Intent(Intent.ACTION_SENDTO, feedbackMailtoUri(context, seasonYear, isFrench)).apply {
+            Intent(Intent.ACTION_SENDTO, feedbackMailtoUri(context, seasonYear)).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
         context.startActivity(intent)

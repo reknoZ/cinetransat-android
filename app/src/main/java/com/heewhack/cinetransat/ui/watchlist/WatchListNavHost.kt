@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +43,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.heewhack.cinetransat.R
 import com.heewhack.cinetransat.data.WatchListStatsRepository
 import com.heewhack.cinetransat.data.rememberFestivalLocale
 import com.heewhack.cinetransat.data.localizedTitle
@@ -146,7 +148,7 @@ private fun WatchListScreen(onOpenScreening: (String, List<String>) -> Unit) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Ma liste") },
+                title = { Text(stringResource(R.string.watchlist_screen_title)) },
                 windowInsets = WindowInsets(0),
             )
         },
@@ -163,13 +165,11 @@ private fun WatchListScreen(onOpenScreening: (String, List<String>) -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Aucun film pour l’instant",
+                    text = stringResource(R.string.watchlist_empty_title),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 )
                 Text(
-                    text =
-                        "Dans Programme, touchez le marque-page en bas à droite de l’affiche pour ajouter une séance. " +
-                            "Vous pouvez aussi utiliser le marque-page en haut de l’écran Détail.",
+                    text = stringResource(R.string.watchlist_empty_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
@@ -254,7 +254,7 @@ private fun WatchListScreen(onOpenScreening: (String, List<String>) -> Unit) {
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.DeleteOutline,
-                                    contentDescription = "Retirer de la liste",
+                                    contentDescription = stringResource(R.string.watchlist_remove),
                                     modifier = Modifier.size(22.dp),
                                 )
                             }

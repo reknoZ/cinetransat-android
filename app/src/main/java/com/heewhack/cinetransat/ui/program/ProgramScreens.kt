@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -63,12 +64,13 @@ import com.heewhack.cinetransat.data.FestivalWeek
 import com.heewhack.cinetransat.data.Screening
 import com.heewhack.cinetransat.data.localizedTitle
 import com.heewhack.cinetransat.data.rememberAppLanguage
+import com.heewhack.cinetransat.data.rememberFestivalLocale
+import com.heewhack.cinetransat.R
 import com.heewhack.cinetransat.ui.LocalFestivalProgramStore
 import com.heewhack.cinetransat.ui.LocalWatchListRepository
 import com.heewhack.cinetransat.ui.components.MoviePosterCard
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -112,7 +114,7 @@ fun ProgramPhoneScreen(
             weeks.isEmpty() -> {
                 ProgramMessage(
                     modifier = Modifier.padding(innerPadding),
-                    message = programState.lastErrorMessage ?: "Programme indisponible.",
+                    message = programState.lastErrorMessage ?: stringResource(R.string.program_unavailable),
                     onRetry = { programStore.completePostLaunchSetup() },
                 )
             }
@@ -180,7 +182,7 @@ fun ProgramTabletScreen(
     if (weeks.isEmpty() || selectedWeek == null) {
         ProgramMessage(
             modifier = modifier,
-            message = programState.lastErrorMessage ?: "Programme indisponible.",
+            message = programState.lastErrorMessage ?: stringResource(R.string.program_unavailable),
             onRetry = { programStore.completePostLaunchSetup() },
         )
         return
@@ -211,7 +213,7 @@ fun ProgramTabletScreen(
                 ) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "Week ${week.weekNumber}",
+                            text = stringResource(R.string.program_week_short, week.weekNumber),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
@@ -338,9 +340,10 @@ private fun WeekGrid(
                     .weight(1f),
         ) {
             val density = LocalDensity.current
-            val minGap = if (compact) 8.dp else 10.dp
+            val minGap = if (compact) 7.dp else 10.dp
             val posterTitleGap = 2.dp
-            val posterWidthScale = if (compact) 0.88f else 0.9f
+            // 0.88 was too small; 1.0 can clip titles — ~0.94 is a middle ground.
+            val posterWidthScale = if (compact) 0.94f else 0.92f
 
             fun rowTitleHeight(width: androidx.compose.ui.unit.Dp, a: Int, b: Int): androidx.compose.ui.unit.Dp {
                 val wpx = with(density) { width.roundToPx() }
@@ -359,7 +362,7 @@ private fun WeekGrid(
                 return with(density) { maxOf(aPx, bPx).toDp() } + 1.dp
             }
 
-            val widthCap = (maxWidth - (minGap * 3f)) / 2f
+            val widthCap = (maxWidth - (minGap * 2f)) / 2f
             val minPosterW = 40.dp
             val posterW =
                 remember(maxWidth, maxHeight, screenings, titleStyle, appLanguage, compact) {
@@ -506,7 +509,12 @@ private fun PosterCell(
                 ) {
                     Icon(
                         imageVector = if (inWatchlist) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                        contentDescription = if (inWatchlist) "Retirer de la liste" else "Ajouter à la liste",
+                        contentDescription =
+                            if (inWatchlist) {
+                                stringResource(R.string.watchlist_remove)
+                            } else {
+                                stringResource(R.string.watchlist_add)
+                            },
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
@@ -527,7 +535,9 @@ private fun PosterCell(
     }
 }
 
-private fun programNavigationTitle(seasonYear: Int): String = "Programme $seasonYear"
+@Composable
+private fun programNavigationTitle(seasonYear: Int): String =
+    stringResource(R.string.program_season_title, seasonYear)
 
 @Composable
 private fun ProgramMessage(
@@ -545,7 +555,7 @@ private fun ProgramMessage(
     ) {
         Text(text = message, textAlign = TextAlign.Center)
         TextButton(onClick = onRetry, modifier = Modifier.padding(top = 8.dp)) {
-            Text("Réessayer")
+            Text(stringResource(R.string.action_retry))
         }
     }
 }
@@ -570,27 +580,27 @@ private fun ProgramErrorBanner(
                 modifier = Modifier.weight(1f),
             )
             TextButton(onClick = onDismiss) {
-                Text("OK")
+                Text(stringResource(R.string.action_ok))
             }
         }
     }
 }
 
-private val englishMonth: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH)
-
+@Composable
 private fun weekHeaderText(week: FestivalWeek): String {
+    val locale = rememberFestivalLocale()
+    val monthFormatter = remember(locale) { DateTimeFormatter.ofPattern("MMMM", locale) }
     val first = week.orderedScreenings.firstOrNull()?.startsAt?.toLocalDate()
     val last = week.orderedScreenings.lastOrNull()?.startsAt?.toLocalDate()
     val range =
         if (first != null && last != null) {
             if (first.month == last.month) {
-                "${first.dayOfMonth}-${last.dayOfMonth} ${englishMonth.format(first)}"
+                "${first.dayOfMonth}-${last.dayOfMonth} ${monthFormatter.format(first)}"
             } else {
-                "${first.dayOfMonth} ${englishMonth.format(first)}-${last.dayOfMonth} ${englishMonth.format(last)}"
+                "${first.dayOfMonth} ${monthFormatter.format(first)}-${last.dayOfMonth} ${monthFormatter.format(last)}"
             }
         } else {
             week.label
         }
-    return "Week ${week.weekNumber} • $range"
+    return stringResource(R.string.program_week_header, week.weekNumber, range)
 }
