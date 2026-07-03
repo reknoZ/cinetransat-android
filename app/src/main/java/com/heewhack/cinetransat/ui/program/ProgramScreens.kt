@@ -39,16 +39,20 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -67,6 +71,7 @@ import com.heewhack.cinetransat.data.rememberAppLanguage
 import com.heewhack.cinetransat.data.rememberFestivalLocale
 import com.heewhack.cinetransat.R
 import com.heewhack.cinetransat.ui.LocalFestivalProgramStore
+import com.heewhack.cinetransat.ui.LocalProgramWeekRepository
 import com.heewhack.cinetransat.ui.LocalWatchListRepository
 import com.heewhack.cinetransat.ui.components.MoviePosterCard
 import kotlinx.coroutines.launch
@@ -79,6 +84,7 @@ fun ProgramPhoneScreen(
     modifier: Modifier = Modifier,
 ) {
     val programStore = LocalFestivalProgramStore.current
+    val programWeekRepository = LocalProgramWeekRepository.current
     val programState by programStore.state.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -119,6 +125,7 @@ fun ProgramPhoneScreen(
                 )
             }
             else -> {
+                val seasonYear = programState.seasonYear
                 Column(
                     modifier =
                         Modifier
@@ -131,7 +138,23 @@ fun ProgramPhoneScreen(
                             onDismiss = programStore::clearError,
                         )
                     }
-                    val pagerState = rememberPagerState(pageCount = { weeks.size })
+                    val savedPageIndex =
+                        remember(seasonYear, weeks) {
+                            programWeekRepository.weekPageIndex(seasonYear, weeks)
+                        }
+                    val pagerState =
+                        rememberPagerState(
+                            initialPage = savedPageIndex.coerceIn(0, weeks.lastIndex.coerceAtLeast(0)),
+                            pageCount = { weeks.size },
+                        )
+                    val pagerScope = rememberCoroutineScope()
+                    LaunchedEffect(pagerState, seasonYear, weeks) {
+                        snapshotFlow { pagerState.currentPage }.collect { page ->
+                            weeks.getOrNull(page)?.let { week ->
+                                programWeekRepository.saveSelectedWeek(seasonYear, week.id)
+                            }
+                        }
+                    }
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.weight(1f),
@@ -151,6 +174,11 @@ fun ProgramPhoneScreen(
                     PagerDots(
                         pageCount = weeks.size,
                         currentPage = pagerState.currentPage,
+                        onPageSelected = { index ->
+                            pagerScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -169,9 +197,24 @@ fun ProgramTabletScreen(
     modifier: Modifier = Modifier,
 ) {
     val programStore = LocalFestivalProgramStore.current
+    val programWeekRepository = LocalProgramWeekRepository.current
     val programState by programStore.state.collectAsStateWithLifecycle()
     val weeks = programState.weeks
-    var selectedWeek by remember(weeks) { mutableStateOf(weeks.firstOrNull()) }
+    val seasonYear = programState.seasonYear
+    var selectedWeek by remember(seasonYear, weeks) {
+        mutableStateOf(programWeekRepository.selectedWeek(weeks, seasonYear))
+    }
+
+    LaunchedEffect(weeks, seasonYear) {
+        if (selectedWeek == null || weeks.none { it.id == selectedWeek?.id }) {
+            selectedWeek = programWeekRepository.selectedWeek(weeks, seasonYear)
+        }
+    }
+
+    LaunchedEffect(selectedWeek, seasonYear) {
+        val week = selectedWeek ?: return@LaunchedEffect
+        programWeekRepository.saveSelectedWeek(seasonYear, week.id)
+    }
 
     if (programState.isLoading && weeks.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -262,29 +305,40 @@ fun ProgramTabletScreen(
 private fun PagerDots(
     pageCount: Int,
     currentPage: Int,
+    onPageSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
+        horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(pageCount) { index ->
             val selected = index == currentPage
+            val dotSize = if (selected) 9.dp else 7.dp
+            val weekLabel = stringResource(R.string.program_week_short, index + 1)
             Box(
                 modifier =
                     Modifier
-                        .padding(horizontal = 3.dp)
-                        .size(if (selected) 8.dp else 6.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (selected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
-                            },
-                        ),
-            )
+                        .size(24.dp)
+                        .semantics { contentDescription = weekLabel }
+                        .clickable { onPageSelected(index) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(dotSize)
+                            .clip(CircleShape)
+                            .background(
+                                if (selected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+                                },
+                            ),
+                )
+            }
         }
     }
 }

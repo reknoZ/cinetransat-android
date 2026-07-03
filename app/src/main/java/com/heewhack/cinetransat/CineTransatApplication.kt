@@ -3,6 +3,7 @@ package com.heewhack.cinetransat
 import android.app.Application
 import com.heewhack.cinetransat.data.AppLanguageRepository
 import com.heewhack.cinetransat.data.FestivalProgramStore
+import com.heewhack.cinetransat.data.ProgramWeekRepository
 import com.heewhack.cinetransat.data.WatchListRepository
 import com.heewhack.cinetransat.data.WatchListStatsRepository
 import com.heewhack.cinetransat.notifications.CancellationNotificationManager
@@ -30,6 +31,9 @@ class CineTransatApplication : Application() {
     lateinit var watchListRepository: WatchListRepository
         private set
 
+    lateinit var programWeekRepository: ProgramWeekRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         if (FirebaseApp.getApps(this).isEmpty()) {
@@ -45,6 +49,7 @@ class CineTransatApplication : Application() {
         programStore = FestivalProgramStore(applicationContext)
         watchListStatsRepository = WatchListStatsRepository(applicationContext)
         appLanguageRepository = AppLanguageRepository(applicationContext)
+        programWeekRepository = ProgramWeekRepository(applicationContext)
         watchListRepository =
             WatchListRepository(
                 applicationContext,

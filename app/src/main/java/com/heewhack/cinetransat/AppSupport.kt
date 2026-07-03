@@ -2,19 +2,39 @@ package com.heewhack.cinetransat
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 
 object AppSupport {
     const val FEEDBACK_EMAIL = "feedback@heewhack.com"
 
-    fun versionName(context: Context): String {
-        val packageInfo =
-            runCatching {
+    private fun packageInfo(context: Context) =
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(
+                    context.packageName,
+                    PackageManager.PackageInfoFlags.of(0),
+                )
+            } else {
+                @Suppress("DEPRECATION")
                 context.packageManager.getPackageInfo(context.packageName, 0)
-            }.getOrNull()
-        return packageInfo?.versionName ?: "—"
+            }
+        }.getOrNull()
+
+    fun versionName(context: Context): String = packageInfo(context)?.versionName ?: "—"
+
+    fun versionCode(context: Context): Long {
+        val info = packageInfo(context) ?: return 0L
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            info.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            info.versionCode.toLong()
+        }
     }
+
+    fun versionLabel(context: Context): String = "${versionName(context)} (${versionCode(context)})"
 
     fun feedbackMailtoUri(
         context: Context,
@@ -26,7 +46,7 @@ object AppSupport {
                 appendLine()
                 appendLine()
                 appendLine("---")
-                append("CinéTransat ${versionName(context)}")
+                append("CinéTransat ${versionLabel(context)}")
                 appendLine()
                 append("Android ${Build.VERSION.RELEASE} · ${Build.MODEL}")
                 append(context.getString(R.string.settings_feedback_season, seasonYear))

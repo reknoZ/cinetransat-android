@@ -28,6 +28,7 @@ import com.heewhack.cinetransat.ui.LocalFestivalImageLoader
 import com.heewhack.cinetransat.ui.LocalFestivalProgramStore
 import com.heewhack.cinetransat.ui.LocalAppLanguageRepository
 import com.heewhack.cinetransat.ui.LocalComponentActivity
+import com.heewhack.cinetransat.ui.LocalProgramWeekRepository
 import com.heewhack.cinetransat.ui.LocalWatchListRepository
 import com.heewhack.cinetransat.ui.ProvideAppLocale
 import com.heewhack.cinetransat.ui.CineTransatApp
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity() {
         val programStore = app.programStore
         val notificationManager = app.cancellationNotificationManager
         val appLanguageRepository = app.appLanguageRepository
+        val programWeekRepository = app.programWeekRepository
 
         setContent {
             val scope = rememberCoroutineScope()
@@ -92,6 +94,7 @@ class MainActivity : ComponentActivity() {
                 LocalWatchListStatsRepository provides watchListStatsRepository,
                 LocalFestivalProgramStore provides programStore,
                 LocalAppLanguageRepository provides appLanguageRepository,
+                LocalProgramWeekRepository provides programWeekRepository,
             ) {
                 ProvideAppLocale(appLanguage) {
                     CineTransatTheme(dynamicColor = false) {

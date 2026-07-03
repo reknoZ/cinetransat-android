@@ -6,6 +6,7 @@ import coil.ImageLoader
 import com.heewhack.cinetransat.data.AppLanguage
 import com.heewhack.cinetransat.data.AppLanguageRepository
 import com.heewhack.cinetransat.data.FestivalProgramStore
+import com.heewhack.cinetransat.data.ProgramWeekRepository
 import com.heewhack.cinetransat.data.WatchListRepository
 import com.heewhack.cinetransat.data.WatchListStatsRepository
 
@@ -37,6 +38,11 @@ val LocalWatchListRepository =
 val LocalFestivalProgramStore =
     staticCompositionLocalOf<FestivalProgramStore> {
         error("FestivalProgramStore not provided")
+    }
+
+val LocalProgramWeekRepository =
+    staticCompositionLocalOf<ProgramWeekRepository> {
+        error("ProgramWeekRepository not provided")
     }
 
 val LocalFestivalImageLoader =
