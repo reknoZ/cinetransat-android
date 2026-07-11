@@ -35,6 +35,10 @@ data class Screening(
     val searchTitle: String,
     val posterURL: String? = null,
     val posterKey: String,
+    val audioLanguage: String? = null,
+    val audioLanguageEn: String? = null,
+    val subtitleLanguage: String? = null,
+    val subtitleLanguageEn: String? = null,
 ) {
     val usesTBDPlaceholderPoster: Boolean
         get() = posterKey == "tbd"
@@ -44,6 +48,17 @@ data class Screening(
 
     val externalSearchLinksEnabled: Boolean
         get() = isProgramAnnounced && searchTitle.isNotBlank()
+
+    val releaseYear: Int?
+        get() = PosterCatalog.releaseYear(posterKey)
+
+    /** Screening day (Geneva) is before today — shown dimmed with a “past” badge in the UI. */
+    val hasPassed: Boolean
+        get() {
+            val today = ZonedDateTime.now(FestivalZone).toLocalDate()
+            val screeningDay = startsAt.withZoneSameInstant(FestivalZone).toLocalDate()
+            return screeningDay < today
+        }
 }
 
 object ExternalFilmLinks {

@@ -1,70 +1,91 @@
 package com.heewhack.cinetransat.ui.theme
 
+import android.app.Activity
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowInsetsControllerCompat
 
-private val DeepNavy = Color(0xFF0D111A)
-private val NightBlue = Color(0xFF141A2E)
-private val AccentBlue = Color(0xFF5B7CFF)
-
-private val DarkColors =
+/** Fixed 2026 navy programme palette (parity with iOS — always dark festival chrome). */
+private val FestivalNavyColors =
     darkColorScheme(
-        primary = AccentBlue,
+        primary = FestivalAccentBright,
         onPrimary = Color.White,
-        primaryContainer = NightBlue,
-        onPrimaryContainer = Color(0xFFE8ECFF),
-        secondary = Color(0xFF9AA8D4),
-        onSecondary = DeepNavy,
-        background = DeepNavy,
-        onBackground = Color(0xFFE8ECF5),
-        surface = NightBlue,
-        onSurface = Color(0xFFE8ECF5),
-        surfaceVariant = Color(0xFF252B3D),
-        onSurfaceVariant = Color(0xFFB4BCCF),
+        primaryContainer = FestivalProgramPagerTrack,
+        onPrimaryContainer = FestivalProgramTitle,
+        secondary = FestivalProgramTitleMuted,
+        onSecondary = FestivalProgramBackground,
+        background = FestivalProgramBackground,
+        onBackground = FestivalProgramTitle,
+        surface = FestivalProgramBackground,
+        onSurface = FestivalProgramTitle,
+        surfaceVariant = FestivalProgramPagerTrack,
+        onSurfaceVariant = FestivalProgramTitleMuted,
+        outline = FestivalProgramTitleMuted.copy(alpha = 0.35f),
+        tertiary = Color(0xFFEF5350),
+        onTertiary = Color.White,
     )
 
+@Deprecated("Use FestivalNavyColors", ReplaceWith("FestivalNavyColors"))
+private val FestivalDarkColors = FestivalNavyColors
+
+@Deprecated("Use FestivalNavyColors", ReplaceWith("FestivalNavyColors"))
 private val FestivalLightColors =
     lightColorScheme(
-        primary = Color(0xFF2F4FA0),
+        primary = FestivalAccent,
         onPrimary = Color.White,
-        primaryContainer = Color(0xFFE8EEFF),
-        onPrimaryContainer = Color(0xFF0F1F4A),
-        secondary = Color(0xFF5D4037),
-        onSecondary = Color.White,
-        background = FestivalYellow,
-        onBackground = FestivalInk,
-        surface = FestivalYellowSurface,
-        onSurface = FestivalInk,
-        surfaceVariant = Color(0xFFFFF0B0),
-        onSurfaceVariant = Color(0xFF3E3E30),
+        primaryContainer = FestivalProgramPagerTrack,
+        onPrimaryContainer = FestivalProgramTitle,
+        secondary = FestivalProgramTitleMuted,
+        onSecondary = FestivalProgramBackground,
+        background = FestivalProgramBackground,
+        onBackground = FestivalProgramTitle,
+        surface = FestivalProgramBackground,
+        onSurface = FestivalProgramTitle,
+        surfaceVariant = FestivalProgramPagerTrack,
+        onSurfaceVariant = FestivalProgramTitleMuted,
+        outline = FestivalProgramTitleMuted.copy(alpha = 0.35f),
         tertiary = Color(0xFFC62828),
         onTertiary = Color.White,
     )
 
 @Composable
 fun CineTransatTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    /** Festival UI uses fixed yellow; keep `false` for parity with iOS. */
+    /** Festival UI always uses the navy palette (iOS parity). */
+    darkTheme: Boolean = true,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme =
         when {
             dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                val context = LocalContext.current
+                val context = LocalView.current.context
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             }
-            darkTheme -> DarkColors
-            else -> FestivalLightColors
+            else -> FestivalNavyColors
         }
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.background.toArgb()
+            window.navigationBarColor = colorScheme.background.toArgb()
+            val controller = WindowInsetsControllerCompat(window, view)
+            controller.isAppearanceLightStatusBars = false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                controller.isAppearanceLightNavigationBars = false
+            }
+        }
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,

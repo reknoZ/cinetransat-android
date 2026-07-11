@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -21,6 +23,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -79,11 +82,35 @@ fun SettingsScreen(
         notificationManager.refreshPermissionStatus()
     }
 
+    val pink = MaterialTheme.colorScheme.primary
+    val mutedPink = pink.copy(alpha = 0.8f)
+    val textButtonColors = ButtonDefaults.textButtonColors(contentColor = pink)
+    val segmentedColors =
+        SegmentedButtonDefaults.colors(
+            activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            activeContentColor = pink,
+            inactiveContainerColor = MaterialTheme.colorScheme.surface,
+            inactiveContentColor = mutedPink,
+        )
+    val switchColors =
+        SwitchDefaults.colors(
+            checkedThumbColor = pink,
+            checkedTrackColor = pink.copy(alpha = 0.45f),
+            uncheckedThumbColor = mutedPink,
+            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+            uncheckedBorderColor = pink.copy(alpha = 0.35f),
+        )
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.settings_title),
+                        color = pink,
+                    )
+                },
             )
         },
     ) { innerPadding ->
@@ -105,6 +132,7 @@ fun SettingsScreen(
                     Text(
                         text = stringResource(R.string.settings_language),
                         style = MaterialTheme.typography.titleSmall,
+                        color = pink,
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -125,6 +153,7 @@ fun SettingsScreen(
                                         index = index,
                                         count = languageOptions.size,
                                     ),
+                                colors = segmentedColors,
                             ) {
                                 Text(label)
                             }
@@ -133,16 +162,17 @@ fun SettingsScreen(
                 }
             }
 
-            item { HorizontalDivider() }
+            item { HorizontalDivider(color = pink.copy(alpha = 0.15f)) }
 
             if (notificationsDenied) {
                 item {
                     ListItem(
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
                         headlineContent = {
                             Text(
                                 text = stringResource(R.string.settings_notifications_denied),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = mutedPink,
                             )
                         },
                     )
@@ -150,20 +180,23 @@ fun SettingsScreen(
             } else {
                 item {
                     ListItem(
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
                         headlineContent = {
                             Text(
-                                if (notificationsEnabled) {
-                                    stringResource(R.string.settings_cancellation_alerts_on)
-                                } else {
-                                    stringResource(R.string.settings_cancellation_alerts_off)
-                                },
+                                text =
+                                    if (notificationsEnabled) {
+                                        stringResource(R.string.settings_cancellation_alerts_on)
+                                    } else {
+                                        stringResource(R.string.settings_cancellation_alerts_off)
+                                    },
+                                color = pink,
                             )
                         },
                         supportingContent = {
                             Text(
                                 text = stringResource(R.string.settings_notifications_help),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = mutedPink,
                             )
                         },
                         trailingContent = {
@@ -184,13 +217,14 @@ fun SettingsScreen(
                                         }
                                     }
                                 },
+                                colors = switchColors,
                             )
                         },
                     )
                 }
             }
 
-            item { HorizontalDivider() }
+            item { HorizontalDivider(color = pink.copy(alpha = 0.15f)) }
 
             item {
                 CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
@@ -209,6 +243,7 @@ fun SettingsScreen(
                             },
                             modifier = Modifier.fillMaxWidth(),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                            colors = textButtonColors,
                         ) {
                             Text(
                                 text = stringResource(R.string.settings_send_feedback),
@@ -221,6 +256,7 @@ fun SettingsScreen(
                             onClick = { openStoreListing(context) },
                             modifier = Modifier.fillMaxWidth(),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                            colors = textButtonColors,
                         ) {
                             Text(
                                 text = stringResource(R.string.settings_rate_this_app),
@@ -233,7 +269,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { HorizontalDivider() }
+            item { HorizontalDivider(color = pink.copy(alpha = 0.15f)) }
 
             item {
                 Column(
@@ -246,6 +282,7 @@ fun SettingsScreen(
                     Text(
                         text = stringResource(R.string.settings_about_app),
                         style = MaterialTheme.typography.titleSmall,
+                        color = pink,
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -255,17 +292,18 @@ fun SettingsScreen(
                         Text(
                             text = stringResource(R.string.settings_about_version_label),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = pink,
                         )
                         Text(
                             text = AppSupport.versionLabel(context),
                             style = MaterialTheme.typography.bodyMedium,
+                            color = mutedPink,
                         )
                     }
                     Text(
                         text = stringResource(R.string.settings_copyright),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = mutedPink,
                     )
                 }
             }

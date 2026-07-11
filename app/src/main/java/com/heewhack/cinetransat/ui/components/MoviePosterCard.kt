@@ -1,6 +1,7 @@
 package com.heewhack.cinetransat.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
@@ -20,7 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -39,7 +42,7 @@ import com.heewhack.cinetransat.data.rememberAppLanguage
 import com.heewhack.cinetransat.data.rememberFestivalLocale
 import com.heewhack.cinetransat.data.remotePosterUrl
 import com.heewhack.cinetransat.ui.LocalFestivalProgramStore
-import com.heewhack.cinetransat.ui.theme.FestivalInk
+import com.heewhack.cinetransat.ui.theme.FestivalAccent
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -49,6 +52,7 @@ fun MoviePosterCard(
     compact: Boolean = false,
     fixedPosterSize: DpSize? = null,
     showDateBadge: Boolean = true,
+    showBorderAndShadow: Boolean = true,
 ) {
     val context = LocalContext.current
     val appLanguage = rememberAppLanguage()
@@ -64,8 +68,8 @@ fun MoviePosterCard(
         Brush.linearGradient(
             colors =
                 listOf(
-                    Color(0xFF1F2437),
-                    Color(0xFF0D0F1F),
+                    Color(0xFF1F2E52),
+                    Color(0xFF121E3F),
                 ),
         )
     val watermarkSize = if (compact) 36.dp else 52.dp
@@ -77,6 +81,9 @@ fun MoviePosterCard(
     val chipShape = RoundedCornerShape(chipRound)
     val chipPadH = if (compact) 6.dp else 8.dp
     val chipPadV = if (compact) 4.dp else 6.dp
+    val hasPassed = screening.hasPassed
+    val showPassedBadge = hasPassed && !screening.isCanceled
+    val shadowElevation = if (compact) 7.dp else 10.dp
 
     val frameModifier =
         if (fixedPosterSize != null) {
@@ -85,102 +92,162 @@ fun MoviePosterCard(
             modifier.aspectRatio(2f / 3f)
         }
 
+    val chromeModifier =
+        if (showBorderAndShadow) {
+            Modifier
+                .shadow(
+                    elevation = shadowElevation,
+                    shape = shape,
+                    clip = false,
+                    spotColor = Color.Black.copy(alpha = 0.35f),
+                    ambientColor = Color.Black.copy(alpha = 0.18f),
+                )
+                .shadow(
+                    elevation = if (compact) 4.dp else 6.dp,
+                    shape = shape,
+                    clip = false,
+                    spotColor = FestivalAccent.copy(alpha = 0.15f),
+                    ambientColor = FestivalAccent.copy(alpha = 0.08f),
+                )
+                .border(1.dp, MaterialTheme.colorScheme.primary, shape)
+        } else {
+            Modifier
+        }
+
     Box(
-        modifier = frameModifier.clip(shape),
+        modifier = frameModifier.then(chromeModifier),
     ) {
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(gradient),
-        )
-
-        when {
-            remotePoster != null -> {
-                AsyncImage(
-                    model =
-                        ImageRequest.Builder(context)
-                            .data(remotePoster)
-                            .crossfade(200)
-                            .build(),
-                    contentDescription = displayTitle,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            posterId != 0 -> {
-                AsyncImage(
-                    model =
-                        ImageRequest.Builder(context)
-                            .data(posterId)
-                            .crossfade(200)
-                            .build(),
-                    contentDescription = displayTitle,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            else -> {
-                Icon(
-                    imageVector = Icons.Filled.Movie,
-                    contentDescription = null,
-                    modifier = Modifier.align(Alignment.Center).size(watermarkSize),
-                    tint = Color.White.copy(alpha = 0.12f),
-                )
-            }
-        }
-
-        if (screening.isCanceled) {
+                    .clip(shape)
+                    .alpha(if (hasPassed) 0.72f else 1f),
+        ) {
             Box(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.45f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Filled.Thunderstorm,
-                        contentDescription = null,
-                        modifier = Modifier.size(if (compact) 28.dp else 36.dp),
-                        tint = Color.White,
+                        .background(gradient),
+            )
+
+            when {
+                remotePoster != null -> {
+                    AsyncImage(
+                        model =
+                            ImageRequest.Builder(context)
+                                .data(remotePoster)
+                                .crossfade(200)
+                                .build(),
+                        contentDescription = displayTitle,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
                     )
-                    Text(
-                        text = stringResource(R.string.detail_screening_canceled),
-                        style =
-                            if (compact) {
-                                MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
-                            } else {
-                                MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
-                            },
-                        color = Color.White,
+                }
+                posterId != 0 -> {
+                    AsyncImage(
+                        model =
+                            ImageRequest.Builder(context)
+                                .data(posterId)
+                                .crossfade(200)
+                                .build(),
+                        contentDescription = displayTitle,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+                else -> {
+                    Icon(
+                        imageVector = Icons.Filled.Movie,
+                        contentDescription = null,
+                        modifier = Modifier.align(Alignment.Center).size(watermarkSize),
+                        tint = Color.White.copy(alpha = 0.12f),
                     )
                 }
             }
 
-        }
+            if (screening.isCanceled) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.45f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Filled.Thunderstorm,
+                            contentDescription = null,
+                            modifier = Modifier.size(if (compact) 28.dp else 36.dp),
+                            tint = Color.White,
+                        )
+                        Text(
+                            text = stringResource(R.string.detail_screening_canceled),
+                            style =
+                                if (compact) {
+                                    MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
+                                } else {
+                                    MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
+                                },
+                            color = Color.White,
+                        )
+                    }
+                }
+            }
 
-        if (showDateBadge) {
-            // Keep date fully opaque even when the poster is darkened for cancellations.
-            Surface(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .padding(if (compact) 6.dp else 8.dp),
-                shape = chipShape,
-                color = Color.Black.copy(alpha = 0.9f),
-                shadowElevation = 0.dp,
-            ) {
-                Text(
-                    text = dateBadge,
-                    modifier = Modifier.padding(horizontal = chipPadH, vertical = chipPadV),
-                    style =
-                        MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.02.sp,
-                        ),
-                    color = Color.White,
+            if (showDateBadge) {
+                Surface(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .padding(if (compact) 6.dp else 8.dp),
+                    shape = chipShape,
+                    color = Color.Black.copy(alpha = if (hasPassed) 0.55f else 0.9f),
+                    shadowElevation = 0.dp,
+                ) {
+                    Text(
+                        text = dateBadge,
+                        modifier = Modifier.padding(horizontal = chipPadH, vertical = chipPadV),
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.02.sp,
+                            ),
+                        color = Color.White.copy(alpha = if (hasPassed) 0.85f else 1f),
+                    )
+                }
+            }
+
+            if (hasPassed && !screening.isCanceled) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF9E9E9E).copy(alpha = 0.22f)),
                 )
+            }
+
+            if (showPassedBadge) {
+                Surface(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(5.dp),
+                    shape = chipShape,
+                    color = Color.White.copy(alpha = 0.92f),
+                    shadowElevation = 0.dp,
+                ) {
+                    Text(
+                        text = stringResource(R.string.screening_passed),
+                        modifier = Modifier.padding(horizontal = chipPadH, vertical = chipPadV),
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.02.sp,
+                            ),
+                        color = Color(0xFF383838),
+                    )
+                }
             }
         }
     }

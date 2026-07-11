@@ -25,21 +25,33 @@
     <string name="settings_notifications_denied">Allow notifications in Android Settings to receive alerts.</string>
 
     <string name="detail_screening_canceled">Screening canceled</string>
+    <string name="screening_passed">Passed</string>
+    <string name="screening_canceled_badge">Canceled</string>
+    <string name="calendar_add_one">Add to Calendar</string>
+    <string name="calendar_add_all">Add All to Calendar</string>
+    <string name="calendar_access_denied">Allow calendar access in Settings to save a screening.</string>
+    <string name="calendar_added_all">Added %d screening(s) to your calendar.</string>
+    <string name="calendar_added_partial">Added %1$d, couldn\u2019t add %2$d.</string>
+    <string name="calendar_nothing_to_add">No upcoming screenings on your watch list.</string>
     <string name="detail_duration_variable">Variable</string>
     <string name="detail_sunset">Sunset</string>
     <string name="detail_start">Screening start</string>
     <string name="detail_duration">Duration</string>
     <string name="detail_legal_age">Legal age</string>
     <string name="detail_recommended_age">Recommended age</string>
+    <string name="detail_audio_language">Language</string>
+    <string name="detail_subtitles">Subtitles</string>
     <string name="detail_references">References</string>
-    <string name="detail_search_imdb">Search on IMDb</string>
-    <string name="detail_search_allocine">Search on Allociné</string>
+    <string name="detail_search_imdb">IMDB</string>
+    <string name="detail_search_allocine">Allociné</string>
+    <string name="detail_film_year">Release year</string>
     <string name="detail_watchlist_others_one">1 other also added it</string>
     <string name="detail_watchlist_others_many">%d others also added it</string>
     <string name="detail_watchlist_interest_one">1 person added it to their watch list</string>
     <string name="detail_watchlist_interest_many">%d people added it to their watch list</string>
     <string name="watchlist_others_one">1 other added it too</string>
     <string name="watchlist_others_many">%d others added it too</string>
+    <string name="watchlist_remove_countdown">Removing in %1$d…</string>
 
     <string name="notification_cancel_title">Screening canceled</string>
     <string name="notification_cancel_body">%1$s — %2$s. Canceled due to weather.</string>

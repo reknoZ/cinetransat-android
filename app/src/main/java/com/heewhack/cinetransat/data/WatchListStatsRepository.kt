@@ -2,16 +2,14 @@ package com.heewhack.cinetransat.data
 
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
-import com.google.firebase.firestore.Source
-import com.heewhack.cinetransat.CineTransatApplication
 import com.heewhack.cinetransat.data.firebase.FirestorePaths
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +26,14 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
+/**
+ * Watch list popularity = `watchlistDevices/{screeningId}.devices`.size.
+ *
+ * On app open, [syncWithLocalWatchList] reconciles local storage with Firestore:
+ * 1. Query Firestore for screenings that already contain this install's anonymous ID.
+ * 2. If local watch list is empty but Firestore has entries → reinstall restore.
+ * 3. Otherwise local is source of truth: register missing IDs, drop stale remote entries.
+ */
 class WatchListStatsRepository(
     context: Context,
 ) {
@@ -42,32 +48,42 @@ class WatchListStatsRepository(
     val counts: StateFlow<Map<String, Int>> = _counts.asStateFlow()
 
     private val listeners = mutableMapOf<String, ListenerRegistration>()
+    private val devicesCountByScreeningId = mutableMapOf<String, Int>()
 
     init {
-        migrateLedgerIfNeeded()
         registerNetworkCallback()
     }
 
     fun count(screeningId: String): Int? = _counts.value[screeningId]
 
+    fun applyOptimisticDelta(
+        screeningId: String,
+        delta: Int,
+    ) {
+        if (delta != 1 && delta != -1) return
+        _counts.update { current ->
+            val next = maxOf(0, (current[screeningId] ?: 0) + delta)
+            current + (screeningId to next)
+        }
+    }
+
     fun startObserving(screeningId: String) {
         if (listeners.containsKey(screeningId)) return
-        val ref = db.document(FirestorePaths.watchlistStat(screeningId))
-        val registration =
+        val ref = db.document(FirestorePaths.watchlistDevices(screeningId))
+        listeners[screeningId] =
             ref.addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.w(TAG, "Listener error ($screeningId): ${error.message}")
+                    Log.w(TAG, "Devices listener ($screeningId): ${error.message}")
                     return@addSnapshotListener
                 }
-                val count = snapshot?.readCount() ?: 0
-                _counts.update { current -> current + (screeningId to maxOf(0, count)) }
+                devicesCountByScreeningId[screeningId] = deviceCount(snapshot?.data)
+                publishCount(screeningId)
             }
-        listeners[screeningId] = registration
-        scope.launch { fetchCountFromServer(ref, screeningId) }
     }
 
     fun stopObserving(screeningId: String) {
         listeners.remove(screeningId)?.remove()
+        devicesCountByScreeningId.remove(screeningId)
     }
 
     fun syncObservations(screeningIds: Set<String>) {
@@ -80,60 +96,69 @@ class WatchListStatsRepository(
         listeners.keys.toList().forEach(::stopObserving)
     }
 
-    fun onFirestoreServerReachable(seasonYear: Int) {
+    fun onFirestoreServerReachable() {
         scope.launch {
             runCatching { db.enableNetwork().await() }
-            flushPendingDeltas(seasonYear)
+            flushPendingDeltas()
         }
     }
 
     suspend fun recordDelta(
         screeningId: String,
-        seasonYear: Int,
         delta: Int,
     ): Boolean {
         if (delta != 1 && delta != -1) return false
-        Log.i(TAG, "recordDelta requested $screeningId Δ$delta season=$seasonYear")
-        val success = attemptServerDelta(screeningId, seasonYear, delta)
+        val success = attemptServerDelta(screeningId, delta)
         if (!success) {
             enqueuePendingDelta(screeningId, delta)
         }
         return success
     }
 
-    suspend fun syncWithLocalWatchList(
-        screeningIds: Set<String>,
-        seasonYear: Int,
-    ) {
-        syncMutex.withLock {
-            Log.i(TAG, "syncWithLocalWatchList ${screeningIds.size} items season=$seasonYear")
+    /**
+     * Reconcile local watch list with Firestore for this install.
+     *
+     * @return The watch list IDs that should be stored locally (unchanged, or restored on reinstall).
+     */
+    suspend fun syncWithLocalWatchList(localIds: Set<String>): Set<String> {
+        val result =
+            syncMutex.withLock {
+                runCatching { db.enableNetwork().await() }
 
-            for (id in contributedIds(seasonYear) - screeningIds) {
-                recordDelta(id, seasonYear, -1)
-            }
+                val remoteIds = fetchContributedScreeningIds()
+                Log.i(
+                    TAG,
+                    "syncWithLocalWatchList local=${localIds.size} remote=${remoteIds.size}",
+                )
 
-            for (id in screeningIds) {
-                if (contributedIds(seasonYear).contains(id)) {
-                    Log.d(TAG, "Skip sync for $id (already contributed on this device)")
-                    continue
+                if (localIds.isEmpty() && remoteIds.isNotEmpty()) {
+                    Log.i(TAG, "Reinstall restore — ${remoteIds.size} screening(s) from Firestore")
+                    remoteIds
+                } else {
+                    for (id in localIds - remoteIds) {
+                        registerDevice(id)
+                    }
+                    for (id in remoteIds - localIds) {
+                        unregisterDevice(id)
+                    }
+                    localIds
                 }
-                recordDelta(id, seasonYear, 1)
             }
-        }
-        flushPendingDeltas(seasonYear)
+        flushPendingDeltas()
+        return result
     }
 
-    suspend fun flushPendingDeltas(seasonYear: Int) {
+    suspend fun flushPendingDeltas() {
         flushMutex.withLock {
             runCatching { db.enableNetwork().await() }
 
             val pending = loadPendingDeltas()
             if (pending.isEmpty()) return
 
-            Log.i(TAG, "Flushing ${pending.size} pending watchlist stat write(s)")
+            Log.i(TAG, "Flushing ${pending.size} pending watchlist write(s)")
             val remaining = mutableListOf<PendingDelta>()
             for (entry in pending) {
-                val success = attemptServerDelta(entry.screeningId, seasonYear, entry.delta)
+                val success = attemptServerDelta(entry.screeningId, entry.delta)
                 if (!success) {
                     remaining += entry
                 }
@@ -142,54 +167,73 @@ class WatchListStatsRepository(
         }
     }
 
+    private suspend fun registerDevice(screeningId: String) {
+        attemptServerDelta(screeningId, 1)
+    }
+
+    private suspend fun unregisterDevice(screeningId: String) {
+        attemptServerDelta(screeningId, -1)
+    }
+
     private suspend fun attemptServerDelta(
         screeningId: String,
-        seasonYear: Int,
         delta: Int,
     ): Boolean {
-        val ref = db.document(FirestorePaths.watchlistStat(screeningId))
-        val path = FirestorePaths.watchlistStat(screeningId)
+        val deviceId = AnonymousDeviceIdentity.deviceId(appContext)
+        val ref = db.document(FirestorePaths.watchlistDevices(screeningId))
 
         return try {
-            val nextCount =
-                withContext(Dispatchers.IO) {
-                    val snapshot = ref.get(Source.SERVER).await()
-                    val current = snapshot.readCount()
-                    val next = current + delta
-                    if (next < 0) {
-                        throw FirebaseFirestoreException(
-                            "Count would become negative",
-                            FirebaseFirestoreException.Code.ABORTED,
-                        )
+            withContext(Dispatchers.IO) {
+                if (delta == 1) {
+                    val snap = ref.get().await()
+                    if (devicesFrom(snap.data).contains(deviceId)) {
+                        return@withContext true
                     }
-                    ref.set(mapOf(COUNT_FIELD to next), SetOptions.merge()).await()
-                    next
+                    ref.set(
+                        mapOf(DEVICES_FIELD to FieldValue.arrayUnion(deviceId)),
+                        SetOptions.merge(),
+                    ).await()
+                } else {
+                    val snap = ref.get().await()
+                    if (!devicesFrom(snap.data).contains(deviceId)) {
+                        return@withContext true
+                    }
+                    ref.update(DEVICES_FIELD, FieldValue.arrayRemove(deviceId)).await()
                 }
-            _counts.update { current -> current + (screeningId to maxOf(0, nextCount)) }
-            if (delta == 1) {
-                markContributed(seasonYear, screeningId)
-            } else {
-                unmarkContributed(seasonYear, screeningId)
             }
             removePendingDelta(screeningId, delta)
-            Log.i(TAG, "Recorded Δ$delta for $screeningId at $path → $nextCount")
+            Log.i(
+                TAG,
+                "Devices ${if (delta == 1) "+" else "−"}1 for $screeningId (…${deviceId.takeLast(6)})",
+            )
             true
         } catch (error: Exception) {
             val code = (error as? FirebaseFirestoreException)?.code
-            Log.e(TAG, "Write failed $screeningId Δ$delta at $path ($code): ${error.message}")
+            Log.e(TAG, "Write failed $screeningId Δ$delta ($code): ${error.message}")
             false
         }
     }
 
-    private suspend fun fetchCountFromServer(
-        ref: com.google.firebase.firestore.DocumentReference,
-        screeningId: String,
-    ) {
-        runCatching {
-            val count = ref.get(Source.SERVER).await().readCount()
-            _counts.update { current -> current + (screeningId to maxOf(0, count)) }
-        }.onFailure { error ->
-            Log.w(TAG, "Initial fetch failed ($screeningId): ${error.message}")
+    private suspend fun fetchContributedScreeningIds(): Set<String> {
+        val deviceId = AnonymousDeviceIdentity.deviceId(appContext)
+        val snapshot =
+            runCatching {
+                db.collection(FirestorePaths.WATCHLIST_DEVICES_COLLECTION)
+                    .whereArrayContains(DEVICES_FIELD, deviceId)
+                    .get()
+                    .await()
+            }.getOrElse { error ->
+                Log.w(TAG, "Contributed IDs query failed: ${error.message}")
+                return emptySet()
+            }
+
+        return snapshot.documents.map { it.id }.toSet()
+    }
+
+    private fun publishCount(screeningId: String) {
+        val count = devicesCountByScreeningId[screeningId] ?: 0
+        _counts.update { current ->
+            if (current[screeningId] == count) current else current + (screeningId to count)
         }
     }
 
@@ -203,20 +247,14 @@ class WatchListStatsRepository(
         connectivityManager.registerNetworkCallback(
             request,
             object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) {
+                override fun onAvailable(network: android.net.Network) {
                     scope.launch {
                         runCatching { db.enableNetwork().await() }
-                        flushPendingDeltas(currentSeasonYear())
+                        flushPendingDeltas()
                     }
                 }
             },
         )
-    }
-
-    private fun currentSeasonYear(): Int {
-        val app = appContext as? CineTransatApplication
-        return app?.programStore?.state?.value?.publicConfig?.currentSeasonYear
-            ?: FestivalPublicConfig.DEFAULT_SEASON_YEAR
     }
 
     private data class PendingDelta(
@@ -274,57 +312,19 @@ class WatchListStatsRepository(
         prefs.edit().putString(KEY_PENDING_DELTAS, array.toString()).apply()
     }
 
-    private fun migrateLedgerIfNeeded() {
-        if (prefs.getInt(KEY_LEDGER_MIGRATION, 0) >= LEDGER_VERSION) return
-        prefs.edit().apply {
-            prefs.all.keys
-                .filter { it.startsWith("watchlistStatsContributed_") }
-                .forEach(::remove)
-            remove(KEY_PENDING_DELTAS)
-            putInt(KEY_LEDGER_MIGRATION, LEDGER_VERSION)
-        }.apply()
-        Log.i(TAG, "Reset watchlist stats ledger (migration v$LEDGER_VERSION)")
+    private fun devicesFrom(data: Map<String, Any>?): List<String> {
+        if (data == null) return emptyList()
+        @Suppress("UNCHECKED_CAST")
+        return (data[DEVICES_FIELD] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
     }
 
-    private fun contributedKey(seasonYear: Int): String = "watchlistStatsContributed_v${LEDGER_VERSION}_$seasonYear"
-
-    private fun contributedIds(seasonYear: Int): Set<String> =
-        prefs.getStringSet(contributedKey(seasonYear), emptySet()) ?: emptySet()
-
-    private fun markContributed(
-        seasonYear: Int,
-        screeningId: String,
-    ) {
-        val ids = contributedIds(seasonYear).toMutableSet()
-        ids.add(screeningId)
-        prefs.edit().putStringSet(contributedKey(seasonYear), ids).apply()
-    }
-
-    private fun unmarkContributed(
-        seasonYear: Int,
-        screeningId: String,
-    ) {
-        val ids = contributedIds(seasonYear).toMutableSet()
-        ids.remove(screeningId)
-        prefs.edit().putStringSet(contributedKey(seasonYear), ids).apply()
-    }
-
-    private fun com.google.firebase.firestore.DocumentSnapshot.readCount(): Int {
-        if (!exists()) return 0
-        val data = data ?: return 0
-        return when (val value = data[COUNT_FIELD]) {
-            is Number -> value.toInt()
-            else -> 0
-        }
-    }
+    private fun deviceCount(data: Map<String, Any>?): Int = devicesFrom(data).size
 
     companion object {
         private const val TAG = "WatchListStats"
         private const val PREFS_NAME = "watchlist_stats"
-        private const val COUNT_FIELD = "count"
+        private const val DEVICES_FIELD = "devices"
         private const val KEY_PENDING_DELTAS = "pending_deltas"
-        private const val KEY_LEDGER_MIGRATION = "ledger_migration"
-        private const val LEDGER_VERSION = 3
 
         fun othersCount(
             total: Int,

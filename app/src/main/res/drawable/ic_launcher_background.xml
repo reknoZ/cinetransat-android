@@ -1,17 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Full icon on the background layer (no launcher parallax zoom). 108dp canvas, logo in 66dp safe zone. -->
+<!-- Full 2026 icon on the background layer (navy + pink, no launcher parallax zoom). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
-        <shape android:shape="rectangle">
-            <solid android:color="#FEF9E2" />
-        </shape>
-    </item>
-    <item
-        android:width="58dp"
-        android:height="58dp"
-        android:gravity="center">
         <bitmap
             android:gravity="fill"
-            android:src="@drawable/cinetransat_logo" />
+            android:src="@drawable/ic_launcher_full" />
     </item>
 </layer-list>

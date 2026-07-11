@@ -255,8 +255,8 @@ class FestivalProgramStore(
     private fun notifyWatchListStatsSync(seasonYear: Int) {
         val app = appContext as? CineTransatApplication ?: return
         app.applicationScope.launch {
-            app.watchListStatsRepository.onFirestoreServerReachable(seasonYear)
-            app.watchListRepository.syncAnonymousStatsWithLocalWatchList(seasonYear)
+            app.watchListStatsRepository.onFirestoreServerReachable()
+            app.watchListRepository.syncWithFirestore()
         }
     }
 

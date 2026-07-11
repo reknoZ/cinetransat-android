@@ -82,6 +82,10 @@ object FestivalProgramFeedDecoder {
                 posterKey == "tbd" -> ""
                 else -> title
             }
+        val audioLanguage = data["audioLanguage"] as? String
+        val audioLanguageEn = data["audioLanguageEn"] as? String
+        val subtitleLanguage = data["subtitleLanguage"] as? String
+        val subtitleLanguageEn = data["subtitleLanguageEn"] as? String
         return Screening(
             id = id,
             title = title,
@@ -96,6 +100,10 @@ object FestivalProgramFeedDecoder {
             searchTitle = searchTitle,
             posterURL = posterURL,
             posterKey = posterKey,
+            audioLanguage = audioLanguage,
+            audioLanguageEn = audioLanguageEn,
+            subtitleLanguage = subtitleLanguage,
+            subtitleLanguageEn = subtitleLanguageEn,
         )
     }
 

@@ -34,6 +34,7 @@ import com.heewhack.cinetransat.ui.ProvideAppLocale
 import com.heewhack.cinetransat.ui.CineTransatApp
 import com.heewhack.cinetransat.ui.splash.FestivalSplashScreen
 import com.heewhack.cinetransat.ui.theme.CineTransatTheme
+import com.heewhack.cinetransat.calendar.ScreeningCalendarService
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -66,9 +67,11 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val appLanguage by appLanguageRepository.language.collectAsStateWithLifecycle()
             var showSplash by remember { mutableStateOf(true) }
+            var launchIsLoading by remember { mutableStateOf(false) }
             var postLaunchStarted by remember { mutableStateOf(false) }
             var pendingSeasonYear by remember { mutableStateOf<Int?>(null) }
             var pendingSettingsEnable by remember { mutableStateOf(false) }
+            var pendingCalendarPermissionCallback by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
             val screeningIdFromNotification by pendingScreeningId
 
             val permissionLauncher =
@@ -87,6 +90,23 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+            val calendarPermissionLauncher =
+                rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestMultiplePermissions(),
+                ) { grants ->
+                    pendingCalendarPermissionCallback?.invoke(grants.values.all { it })
+                    pendingCalendarPermissionCallback = null
+                }
+
+            val requestCalendarPermissions: (onResult: (Boolean) -> Unit) -> Unit = { onResult ->
+                if (ScreeningCalendarService.hasCalendarPermissions(this@MainActivity)) {
+                    onResult(true)
+                } else {
+                    pendingCalendarPermissionCallback = onResult
+                    calendarPermissionLauncher.launch(ScreeningCalendarService.calendarPermissions)
+                }
+            }
+
             CompositionLocalProvider(
                 LocalComponentActivity provides this@MainActivity,
                 LocalFestivalImageLoader provides imageLoader,
@@ -99,27 +119,32 @@ class MainActivity : ComponentActivity() {
                 ProvideAppLocale(appLanguage) {
                     CineTransatTheme(dynamicColor = false) {
                         if (showSplash) {
-                            FestivalSplashScreen(onFinished = { showSplash = false })
+                            FestivalSplashScreen(
+                                isLoading = launchIsLoading,
+                                onAnimationComplete = {
+                                    if (postLaunchStarted) return@FestivalSplashScreen
+                                    postLaunchStarted = true
+                                    launchIsLoading = true
+                                    scope.launch {
+                                        programStore.completePostLaunchSetup()
+                                        val seasonYear = programStore.state.value.publicConfig.currentSeasonYear
+                                        watchListRepository.syncWithFirestore()
+                                        showSplash = false
+                                        if (!notificationManager.shouldShowFirstLaunchPrompt()) return@launch
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                            pendingSeasonYear = seasonYear
+                                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        } else {
+                                            notificationManager.handleFirstLaunchPrompt(seasonYear) { true }
+                                        }
+                                    }
+                                },
+                            )
                         } else {
-                            LaunchedEffect(postLaunchStarted) {
-                                if (postLaunchStarted) return@LaunchedEffect
-                                postLaunchStarted = true
-                                programStore.completePostLaunchSetup()
-                                val seasonYear = programStore.state.value.publicConfig.currentSeasonYear
-                                scope.launch {
-                                    watchListRepository.syncAnonymousStatsWithLocalWatchList(seasonYear)
-                                }
-                                if (!notificationManager.shouldShowFirstLaunchPrompt()) return@LaunchedEffect
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    pendingSeasonYear = seasonYear
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                } else {
-                                    notificationManager.handleFirstLaunchPrompt(seasonYear) { true }
-                                }
-                            }
                             CineTransatApp(
                                 pendingScreeningId = screeningIdFromNotification,
                                 onPendingScreeningHandled = { pendingScreeningId.value = null },
+                                onRequestCalendarPermissions = requestCalendarPermissions,
                                 onRequestNotificationPermission = { seasonYear ->
                                     pendingSeasonYear = seasonYear
                                     pendingSettingsEnable = true
@@ -146,9 +171,8 @@ class MainActivity : ComponentActivity() {
         val app = application as CineTransatApplication
         app.programStore.ensureListening()
         lifecycleScope.launch {
-            val seasonYear = app.programStore.state.value.publicConfig.currentSeasonYear
-            app.watchListStatsRepository.flushPendingDeltas(seasonYear)
-            app.watchListRepository.syncAnonymousStatsWithLocalWatchList(seasonYear)
+            app.watchListStatsRepository.flushPendingDeltas()
+            app.watchListRepository.syncWithFirestore()
         }
     }
 

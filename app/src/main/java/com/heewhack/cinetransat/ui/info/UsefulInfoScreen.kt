@@ -59,12 +59,21 @@ fun UsefulInfoScreen(modifier: Modifier = Modifier) {
     val programStore = LocalFestivalProgramStore.current
     val programState by programStore.state.collectAsStateWithLifecycle()
     val sections = cinetransatInfosSections(programState.publicConfig.currentSeasonYear)
+    val pink = MaterialTheme.colorScheme.primary
+    val bodyPink = pink.copy(alpha = 0.88f)
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            CenterAlignedTopAppBar(title = { Text(stringResource(R.string.info_nav_title)) })
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.info_nav_title),
+                        color = pink,
+                    )
+                },
+            )
         },
     ) { innerPadding ->
         LazyColumn(
@@ -95,18 +104,20 @@ fun UsefulInfoScreen(modifier: Modifier = Modifier) {
                             imageVector = iconForSection(section.icon),
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = bodyPink,
                         )
                         Row(modifier = Modifier.padding(start = 10.dp).weight(1f)) {
-                        Text(
-                            text = section.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                            Text(
+                                text = section.title,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = pink,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                         }
                         Icon(
                             imageVector = if (isOpen) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                             contentDescription = if (isOpen) "Réduire" else "Développer",
+                            tint = pink,
                         )
                     }
                     AnimatedVisibility(
@@ -117,14 +128,14 @@ fun UsefulInfoScreen(modifier: Modifier = Modifier) {
                         Text(
                             text = section.body,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = bodyPink,
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
                                     .padding(start = 4.dp, end = 4.dp, bottom = 16.dp),
                         )
                     }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                    HorizontalDivider(color = pink.copy(alpha = 0.22f))
                 }
             }
         }

@@ -27,7 +27,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -49,6 +49,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -91,7 +92,7 @@ fun ProgramPhoneScreen(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = {
                     Text(
                         programNavigationTitle(programState.seasonYear),
@@ -275,7 +276,7 @@ fun ProgramTabletScreen(
             modifier = Modifier.weight(1f),
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
-                CenterAlignedTopAppBar(
+                TopAppBar(
                     title = {
                         Text(
                             programNavigationTitle(programState.seasonYear),
@@ -371,7 +372,7 @@ private fun WeekGrid(
     Column(modifier = modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
+            horizontalArrangement = Arrangement.Start,
         ) {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
@@ -581,17 +582,23 @@ private fun PosterCell(
             overflow = TextOverflow.Clip,
             textAlign = TextAlign.Center,
             softWrap = true,
+            color =
+                if (screening.hasPassed) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
             modifier =
                 Modifier
                     .width(posterSize.width)
+                    .graphicsLayer { alpha = if (screening.hasPassed) 0.8f else 1f }
                     .clickable(onClick = onOpenDetail),
         )
     }
 }
 
 @Composable
-private fun programNavigationTitle(seasonYear: Int): String =
-    stringResource(R.string.program_season_title, seasonYear)
+private fun programNavigationTitle(seasonYear: Int): String = seasonYear.toString()
 
 @Composable
 private fun ProgramMessage(

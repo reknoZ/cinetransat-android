@@ -4,10 +4,13 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -19,19 +22,23 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.FamilyRestroom
 import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.MovieCreation
 import androidx.compose.material.icons.filled.PanTool
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.Theaters
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +61,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.ButtonDefaults
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.heewhack.cinetransat.R
 import com.heewhack.cinetransat.data.AppLanguage
@@ -60,14 +70,17 @@ import com.heewhack.cinetransat.data.ExternalFilmLinks
 import com.heewhack.cinetransat.data.Screening
 import com.heewhack.cinetransat.data.localizedSynopsis
 import com.heewhack.cinetransat.data.localizedTitle
-import com.heewhack.cinetransat.data.WatchListStatsRepository
+import com.heewhack.cinetransat.data.localizedAudioLanguage
+import com.heewhack.cinetransat.data.localizedSubtitleLanguage
+import com.heewhack.cinetransat.data.hasLanguageInfo
 import com.heewhack.cinetransat.data.rememberAppLanguage
 import com.heewhack.cinetransat.data.rememberFestivalLocale
+import com.heewhack.cinetransat.calendar.ScreeningCalendarService
+import com.heewhack.cinetransat.ui.LocalComponentActivity
 import com.heewhack.cinetransat.ui.LocalFestivalProgramStore
 import com.heewhack.cinetransat.ui.LocalWatchListRepository
 import com.heewhack.cinetransat.ui.LocalWatchListStatsRepository
 import com.heewhack.cinetransat.ui.watchlistInterestLabel
-import com.heewhack.cinetransat.ui.watchlistOthersLabel
 import com.heewhack.cinetransat.ui.components.MoviePosterCard
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
@@ -188,6 +201,70 @@ private fun ScreeningFactsRow(
     }
 }
 
+@Composable
+private fun ScreeningLanguageRow(
+    screening: Screening,
+    appLanguage: AppLanguage,
+    modifier: Modifier = Modifier,
+) {
+    val audio = screening.localizedAudioLanguage(appLanguage)
+    val subtitles = screening.localizedSubtitleLanguage(appLanguage)
+
+    Row(
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.Top,
+    ) {
+        audio?.let { value ->
+            LanguageFactColumn(
+                icon = Icons.Filled.RecordVoiceOver,
+                label = stringResource(R.string.detail_audio_language),
+                value = value,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        subtitles?.let { value ->
+            LanguageFactColumn(
+                icon = Icons.Filled.Subtitles,
+                label = stringResource(R.string.detail_subtitles),
+                value = value,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LanguageFactColumn(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier.semantics {
+                contentDescription = "$label, $value"
+            },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieDetailScreen(
@@ -240,17 +317,18 @@ fun MovieDetailScreen(
             modifier = Modifier.padding(innerPadding),
         ) { page ->
             val item = screenings[page]
-            DetailBody(
-                screening = item,
-                appLanguage = appLanguage,
-                onOpenImdb = { uriHandler.openUri(ExternalFilmLinks.imdbSearchUri(item.searchTitle).toString()) },
-                onOpenAllocine = { uriHandler.openUri(ExternalFilmLinks.allocineSearchUri(item.searchTitle).toString()) },
-                pagerState = pagerState,
-                inWatchList = item.id in watchIds,
-                onToggleWatch = {
-                    scope.launch { watchRepo.toggle(item.id, seasonYear) }
-                },
-            )
+            key(item.id, watchIds.contains(item.id)) {
+                DetailBody(
+                    screening = item,
+                    appLanguage = appLanguage,
+                    onOpenImdb = { uriHandler.openUri(ExternalFilmLinks.imdbSearchUri(item.searchTitle).toString()) },
+                    onOpenAllocine = { uriHandler.openUri(ExternalFilmLinks.allocineSearchUri(item.searchTitle).toString()) },
+                    pagerState = pagerState,
+                    onToggleWatch = {
+                        scope.launch { watchRepo.toggle(item.id, seasonYear) }
+                    },
+                )
+            }
         }
     }
 }
@@ -262,15 +340,18 @@ private fun DetailBody(
     onOpenImdb: () -> Unit,
     onOpenAllocine: () -> Unit,
     pagerState: PagerState,
-    inWatchList: Boolean,
     onToggleWatch: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val watchRepo = LocalWatchListRepository.current
+    val watchIds by watchRepo.screeningIds.collectAsStateWithLifecycle()
+    val inWatchList = screening.id in watchIds
     val statsRepo = LocalWatchListStatsRepository.current
     val counts by statsRepo.counts.collectAsStateWithLifecycle()
     val dayFormatter = rememberDayFormatter()
     val timeFormatter = rememberTimeFormatter()
     val contentModifier = Modifier.widthIn(max = 720.dp).fillMaxWidth()
+    val activity = LocalComponentActivity.current
 
     DisposableEffect(screening.id) {
         statsRepo.startObserving(screening.id)
@@ -278,7 +359,6 @@ private fun DetailBody(
     }
 
     val totalCount = counts[screening.id] ?: 0
-    val othersCount = WatchListStatsRepository.othersCount(totalCount, inWatchList)
 
     Column(
         modifier =
@@ -379,19 +459,30 @@ private fun DetailBody(
                         color = Color(0xFFFF9800),
                     )
                 }
+            } else if (screening.hasPassed) {
+                Text(
+                    text = stringResource(R.string.screening_passed),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             Text(
                 text = dayFormatter.format(screening.startsAt),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color =
+                    if (screening.hasPassed) {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
             )
 
             val interestLabel =
-                when {
-                    othersCount > 0 -> watchlistOthersLabel(othersCount, detail = true)
-                    totalCount > 0 -> watchlistInterestLabel(totalCount)
-                    else -> null
+                if (totalCount > 0) {
+                    watchlistInterestLabel(totalCount)
+                } else {
+                    null
                 }
             if (interestLabel != null) {
                 Text(
@@ -403,38 +494,151 @@ private fun DetailBody(
 
             ScreeningFactsRow(screening = screening, timeFormatter = timeFormatter)
 
+            if (screening.hasLanguageInfo) {
+                ScreeningLanguageRow(
+                    screening = screening,
+                    appLanguage = appLanguage,
+                    modifier = contentModifier,
+                )
+            }
+
+            if (!screening.isCanceled) {
+                OutlinedButton(
+                    onClick = {
+                        val intent =
+                            ScreeningCalendarService.insertIntent(
+                                context = activity,
+                                screening = screening,
+                                language = appLanguage,
+                            )
+                        activity.startActivity(intent)
+                    },
+                    modifier = contentModifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Event,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.calendar_add_one))
+                }
+            }
+
             Text(
                 text = screening.localizedSynopsis(appLanguage),
                 style = MaterialTheme.typography.bodyLarge,
             )
+
+            ExternalLinksRow(
+                modifier = contentModifier,
+                linksEnabled = screening.externalSearchLinksEnabled,
+                releaseYear = screening.releaseYear,
+                onOpenImdb = onOpenImdb,
+                onOpenAllocine = onOpenAllocine,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExternalLinksRow(
+    linksEnabled: Boolean,
+    releaseYear: Int?,
+    onOpenImdb: () -> Unit,
+    onOpenAllocine: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val linkColor =
+        if (linksEnabled) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    val yearLabel = stringResource(R.string.detail_film_year)
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ExternalLinkChip(
+                enabled = linksEnabled,
+                onClick = onOpenImdb,
+                linkColor = linkColor,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.MovieCreation,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = linkColor,
+                )
+                Text(
+                    text = stringResource(R.string.detail_search_imdb),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = linkColor,
+                )
+            }
+            ExternalLinkChip(
+                enabled = linksEnabled,
+                onClick = onOpenAllocine,
+                linkColor = linkColor,
+            ) {
+                Text(
+                    text = "🍿",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = stringResource(R.string.detail_search_allocine),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = linkColor,
+                )
+            }
         }
 
-        Column(
-            modifier = contentModifier,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
+        Spacer(modifier = Modifier.weight(1f))
+
+        releaseYear?.let { year ->
             Text(
-                text = stringResource(R.string.detail_references),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                text = year.toString(),
+                modifier = Modifier.semantics {
+                    contentDescription = yearLabel
+                },
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            TextButton(onClick = onOpenImdb) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Outlined.Public, contentDescription = null)
-                    Text(stringResource(R.string.detail_search_imdb))
-                }
-            }
-            TextButton(onClick = onOpenAllocine) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("🍿")
-                    Text(stringResource(R.string.detail_search_allocine))
-                }
+        }
+    }
+}
+
+@Composable
+private fun ExternalLinkChip(
+    enabled: Boolean,
+    onClick: () -> Unit,
+    linkColor: Color,
+    content: @Composable () -> Unit,
+) {
+    val row =
+        @Composable {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                content()
             }
         }
+    if (enabled) {
+        TextButton(
+            onClick = onClick,
+            contentPadding = PaddingValues(0.dp),
+            colors = ButtonDefaults.textButtonColors(contentColor = linkColor),
+        ) {
+            row()
+        }
+    } else {
+        row()
     }
 }
