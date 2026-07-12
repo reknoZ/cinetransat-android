@@ -55,24 +55,7 @@ fun Screening.localizedSubtitleLanguage(language: AppLanguage): String? =
         AppLanguage.En -> nonEmptyLanguage(subtitleLanguageEn) ?: nonEmptyLanguage(subtitleLanguage)
     }
 
-val Screening.hasLanguageInfo: Boolean
-    get() {
-        if (!hasSpokenDialogue) return false
-        return nonEmptyLanguage(audioLanguage) != null || nonEmptyLanguage(subtitleLanguage) != null
-    }
-
 private fun nonEmptyLanguage(value: String?): String? {
     val trimmed = value?.trim().orEmpty()
     return trimmed.takeIf { it.isNotEmpty() }
 }
-
-private val Screening.hasSpokenDialogue: Boolean
-    get() {
-        val noDialogue = setOf("sans dialogue", "no dialogue")
-        val labels =
-            listOfNotNull(audioLanguage, audioLanguageEn)
-                .map { it.trim().lowercase() }
-                .filter { it.isNotEmpty() }
-        if (labels.isEmpty()) return true
-        return !labels.all { it in noDialogue }
-    }

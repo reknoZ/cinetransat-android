@@ -55,10 +55,33 @@ data class Screening(
     /** Screening day (Geneva) is before today — shown dimmed with a “past” badge in the UI. */
     val hasPassed: Boolean
         get() {
-            val today = ZonedDateTime.now(FestivalZone).toLocalDate()
+            val today = LocalDate.now(FestivalZone)
             val screeningDay = startsAt.withZoneSameInstant(FestivalZone).toLocalDate()
             return screeningDay < today
         }
+
+    val festivalDay: LocalDate
+        get() = startsAt.withZoneSameInstant(FestivalZone).toLocalDate()
+}
+
+/** Screenings scheduled on [date] in Geneva (includes canceled). */
+fun List<Screening>.screeningsOn(date: LocalDate): List<Screening> =
+    filter { it.festivalDay == date }
+        .sortedBy { it.startsAt }
+
+fun List<Screening>.screeningsToday(): List<Screening> =
+    screeningsOn(LocalDate.now(FestivalZone))
+
+/** Week pager index for [today] — current week, next upcoming, or last week if the festival ended. */
+fun List<FestivalWeek>.indexOfWeekFor(date: LocalDate = LocalDate.now(FestivalZone)): Int {
+    if (isEmpty()) return 0
+    indexOfFirst { week -> week.orderedScreenings.any { it.festivalDay == date } }
+        .takeIf { it >= 0 }
+        ?.let { return it }
+    indexOfFirst { week -> week.orderedScreenings.any { it.festivalDay >= date } }
+        .takeIf { it >= 0 }
+        ?.let { return it }
+    return lastIndex
 }
 
 object ExternalFilmLinks {

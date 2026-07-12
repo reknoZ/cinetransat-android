@@ -72,7 +72,6 @@ import com.heewhack.cinetransat.data.localizedSynopsis
 import com.heewhack.cinetransat.data.localizedTitle
 import com.heewhack.cinetransat.data.localizedAudioLanguage
 import com.heewhack.cinetransat.data.localizedSubtitleLanguage
-import com.heewhack.cinetransat.data.hasLanguageInfo
 import com.heewhack.cinetransat.data.rememberAppLanguage
 import com.heewhack.cinetransat.data.rememberFestivalLocale
 import com.heewhack.cinetransat.calendar.ScreeningCalendarService
@@ -207,30 +206,26 @@ private fun ScreeningLanguageRow(
     appLanguage: AppLanguage,
     modifier: Modifier = Modifier,
 ) {
-    val audio = screening.localizedAudioLanguage(appLanguage)
-    val subtitles = screening.localizedSubtitleLanguage(appLanguage)
+    val audio = screening.localizedAudioLanguage(appLanguage) ?: stringResource(R.string.detail_language_unspecified)
+    val subtitles = screening.localizedSubtitleLanguage(appLanguage) ?: stringResource(R.string.detail_language_unspecified)
 
     Row(
         modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.Top,
     ) {
-        audio?.let { value ->
-            LanguageFactColumn(
-                icon = Icons.Filled.RecordVoiceOver,
-                label = stringResource(R.string.detail_audio_language),
-                value = value,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        subtitles?.let { value ->
-            LanguageFactColumn(
-                icon = Icons.Filled.Subtitles,
-                label = stringResource(R.string.detail_subtitles),
-                value = value,
-                modifier = Modifier.weight(1f),
-            )
-        }
+        LanguageFactColumn(
+            icon = Icons.Filled.RecordVoiceOver,
+            label = stringResource(R.string.detail_audio_language),
+            value = audio,
+            modifier = Modifier.weight(1f),
+        )
+        LanguageFactColumn(
+            icon = Icons.Filled.Subtitles,
+            label = stringResource(R.string.detail_subtitles),
+            value = subtitles,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -271,6 +266,8 @@ fun MovieDetailScreen(
     screenings: List<Screening>,
     initialScreeningId: String,
     onNavigateUp: () -> Unit,
+    modifier: Modifier = Modifier,
+    showUpNavigation: Boolean = true,
 ) {
     if (screenings.isEmpty()) return
 
@@ -289,6 +286,7 @@ fun MovieDetailScreen(
     val appLanguage = rememberAppLanguage()
 
     Scaffold(
+        modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CenterAlignedTopAppBar(
@@ -301,11 +299,13 @@ fun MovieDetailScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.detail_back),
-                        )
+                    if (showUpNavigation) {
+                        IconButton(onClick = onNavigateUp) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.detail_back),
+                            )
+                        }
                     }
                 },
                 windowInsets = androidx.compose.foundation.layout.WindowInsets(0),
@@ -494,13 +494,11 @@ private fun DetailBody(
 
             ScreeningFactsRow(screening = screening, timeFormatter = timeFormatter)
 
-            if (screening.hasLanguageInfo) {
-                ScreeningLanguageRow(
-                    screening = screening,
-                    appLanguage = appLanguage,
-                    modifier = contentModifier,
-                )
-            }
+            ScreeningLanguageRow(
+                screening = screening,
+                appLanguage = appLanguage,
+                modifier = contentModifier,
+            )
 
             if (!screening.isCanceled) {
                 OutlinedButton(

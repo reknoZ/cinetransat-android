@@ -24,6 +24,7 @@ fun ProgramNavHost(
     modifier: Modifier = Modifier,
     pendingScreeningId: String? = null,
     onPendingScreeningHandled: () -> Unit = {},
+    programFocusGeneration: Int = 0,
 ) {
     val activity = LocalComponentActivity.current
     val windowSizeClass = calculateWindowSizeClass(activity = activity)
@@ -53,10 +54,12 @@ fun ProgramNavHost(
             if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact) {
                 ProgramPhoneScreen(
                     onScreeningClick = { _, screening -> onScreeningClick(screening.id) },
+                    programFocusGeneration = programFocusGeneration,
                 )
             } else {
                 ProgramTabletScreen(
                     onScreeningClick = { _, screening -> onScreeningClick(screening.id) },
+                    programFocusGeneration = programFocusGeneration,
                 )
             }
         }

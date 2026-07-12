@@ -67,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.heewhack.cinetransat.data.AppLanguage
 import com.heewhack.cinetransat.data.FestivalWeek
 import com.heewhack.cinetransat.data.Screening
+import com.heewhack.cinetransat.data.indexOfWeekFor
 import com.heewhack.cinetransat.data.localizedTitle
 import com.heewhack.cinetransat.data.rememberAppLanguage
 import com.heewhack.cinetransat.data.rememberFestivalLocale
@@ -82,6 +83,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ProgramPhoneScreen(
     onScreeningClick: (FestivalWeek, Screening) -> Unit,
+    programFocusGeneration: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val programStore = LocalFestivalProgramStore.current
@@ -156,6 +158,13 @@ fun ProgramPhoneScreen(
                             }
                         }
                     }
+                    LaunchedEffect(programFocusGeneration, seasonYear, weeks) {
+                        if (programFocusGeneration == 0 || weeks.isEmpty()) return@LaunchedEffect
+                        val targetPage = weeks.indexOfWeekFor().coerceIn(0, weeks.lastIndex)
+                        if (pagerState.currentPage != targetPage) {
+                            pagerState.animateScrollToPage(targetPage)
+                        }
+                    }
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.weight(1f),
@@ -195,6 +204,7 @@ fun ProgramPhoneScreen(
 @Composable
 fun ProgramTabletScreen(
     onScreeningClick: (FestivalWeek, Screening) -> Unit,
+    programFocusGeneration: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val programStore = LocalFestivalProgramStore.current
@@ -215,6 +225,11 @@ fun ProgramTabletScreen(
     LaunchedEffect(selectedWeek, seasonYear) {
         val week = selectedWeek ?: return@LaunchedEffect
         programWeekRepository.saveSelectedWeek(seasonYear, week.id)
+    }
+
+    LaunchedEffect(programFocusGeneration, weeks, seasonYear) {
+        if (programFocusGeneration == 0 || weeks.isEmpty()) return@LaunchedEffect
+        selectedWeek = weeks[weeks.indexOfWeekFor()]
     }
 
     if (programState.isLoading && weeks.isEmpty()) {

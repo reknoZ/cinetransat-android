@@ -18,7 +18,7 @@ android {
         applicationId = "com.heewhack.cinetransat"
         minSdk = 29
         targetSdk = 36
-        versionCode = 4
+        versionCode = 5
         versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

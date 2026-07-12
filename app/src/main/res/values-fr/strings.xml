@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">CinéTransat</string>
     <string name="tab_program">Programme</string>
+    <string name="tab_today">Aujourd\'hui</string>
     <string name="tab_watchlist">À voir</string>
     <string name="tab_info">Infos</string>
     <string name="tab_festival">Festival</string>
@@ -41,6 +42,7 @@
     <string name="detail_recommended_age">Âge suggéré</string>
     <string name="detail_audio_language">Langue</string>
     <string name="detail_subtitles">Sous-titres</string>
+    <string name="detail_language_unspecified">—</string>
     <string name="detail_references">Références</string>
     <string name="detail_search_imdb">IMDB</string>
     <string name="detail_search_allocine">Allociné</string>
