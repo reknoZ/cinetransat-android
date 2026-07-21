@@ -68,6 +68,9 @@
     <string name="rattrapage_votes_one">1 vote</string>
     <string name="rattrapage_votes_many">%d votes</string>
     <string name="rattrapage_voting_closed">Voting is not open yet.</string>
+    <string name="rattrapage_voting_open_title">Voting is open!</string>
+    <string name="rattrapage_voting_open_message">Choose which canceled film you most want to see on Catch Up Night.</string>
+    <string name="rattrapage_voting_open_ok">OK</string>
 
     <string name="notification_cancel_title">Screening canceled</string>
     <string name="notification_cancel_body">%1$s — %2$s. Canceled due to weather.</string>

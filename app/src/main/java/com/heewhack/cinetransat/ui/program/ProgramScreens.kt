@@ -91,26 +91,12 @@ fun ProgramPhoneScreen(
     val programStore = LocalFestivalProgramStore.current
     val programWeekRepository = LocalProgramWeekRepository.current
     val programState by programStore.state.collectAsStateWithLifecycle()
+    val weeks = programState.weeks
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = {
-                    ProgramSeasonNavigator(
-                        seasonYear = programState.seasonYear,
-                        availableYears = programState.availableSeasonYears,
-                        onSelectSeason = programStore::selectSeason,
-                    )
-                },
-                windowInsets = WindowInsets(0),
-                expandedHeight = 44.dp,
-            )
-        },
     ) { innerPadding ->
-        val weeks = programState.weeks
-
         when {
             programState.isLoading && weeks.isEmpty() -> {
                 Box(
@@ -168,6 +154,38 @@ fun ProgramPhoneScreen(
                             pagerState.animateScrollToPage(targetPage)
                         }
                     }
+
+                    val currentWeek = weeks.getOrNull(pagerState.currentPage)
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        ProgramSeasonNavigator(
+                            seasonYear = programState.seasonYear,
+                            availableYears = programState.availableSeasonYears,
+                            onSelectSeason = programStore::selectSeason,
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        if (currentWeek != null) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+                            ) {
+                                Text(
+                                    text = weekHeaderText(currentWeek),
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                )
+                            }
+                        }
+                    }
+
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.weight(1f),
@@ -177,6 +195,7 @@ fun ProgramPhoneScreen(
                         WeekGrid(
                             week = week,
                             compact = true,
+                            showWeekHeader = false,
                             onScreeningClick = onScreeningClick,
                             modifier =
                                 Modifier
@@ -195,7 +214,7 @@ fun ProgramPhoneScreen(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 2.dp),
+                                .padding(top = 10.dp, bottom = 14.dp),
                     )
                 }
             }
@@ -296,20 +315,40 @@ fun ProgramTabletScreen(
             topBar = {
                 TopAppBar(
                     title = {
-                        ProgramSeasonNavigator(
-                            seasonYear = programState.seasonYear,
-                            availableYears = programState.availableSeasonYears,
-                            onSelectSeason = programStore::selectSeason,
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            ProgramSeasonNavigator(
+                                seasonYear = programState.seasonYear,
+                                availableYears = programState.availableSeasonYears,
+                                onSelectSeason = programStore::selectSeason,
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+                            ) {
+                                Text(
+                                    text = weekHeaderText(selectedWeek!!),
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                )
+                            }
+                        }
                     },
                     windowInsets = WindowInsets(0),
-                    expandedHeight = 44.dp,
+                    expandedHeight = 48.dp,
                 )
             },
         ) { innerPadding ->
             WeekGrid(
                 week = selectedWeek!!,
                 compact = false,
+                showWeekHeader = false,
                 onScreeningClick = onScreeningClick,
                 modifier =
                     Modifier
@@ -330,17 +369,16 @@ private fun PagerDots(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(pageCount) { index ->
             val selected = index == currentPage
-            val dotSize = if (selected) 9.dp else 7.dp
             val weekLabel = stringResource(R.string.program_week_short, index + 1)
             Box(
                 modifier =
                     Modifier
-                        .size(24.dp)
+                        .size(40.dp)
                         .semantics { contentDescription = weekLabel }
                         .clickable { onPageSelected(index) },
                 contentAlignment = Alignment.Center,
@@ -348,13 +386,19 @@ private fun PagerDots(
                 Box(
                     modifier =
                         Modifier
-                            .size(dotSize)
+                            .then(
+                                if (selected) {
+                                    Modifier.size(22.dp, 10.dp)
+                                } else {
+                                    Modifier.size(10.dp)
+                                },
+                            )
                             .clip(CircleShape)
                             .background(
                                 if (selected) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f)
                                 },
                             ),
                 )
@@ -369,6 +413,7 @@ private fun WeekGrid(
     compact: Boolean,
     onScreeningClick: (FestivalWeek, Screening) -> Unit,
     modifier: Modifier = Modifier,
+    showWeekHeader: Boolean = true,
 ) {
     val screenings = week.orderedScreenings
     if (screenings.size != 4) return
@@ -389,23 +434,27 @@ private fun WeekGrid(
         }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start,
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+        if (showWeekHeader) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
             ) {
-                Text(
-                    text = weekHeaderText(week),
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                )
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+                ) {
+                    Text(
+                        text = weekHeaderText(week),
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
+                }
             }
+            Spacer(modifier.height(10.dp))
+        } else {
+            Spacer(modifier.height(4.dp))
         }
-        Spacer(Modifier.height(10.dp))
 
         BoxWithConstraints(
             modifier =

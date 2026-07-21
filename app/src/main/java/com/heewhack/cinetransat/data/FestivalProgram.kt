@@ -98,19 +98,16 @@ data class Screening(
         get() = startsAt.withZoneSameInstant(FestivalZone).toLocalDate()
 }
 
-/** Canceled films for Soirée Rattrapage, ordered by programme date.
- * Empty unless at least two announced screenings are canceled (voting needs a choice).
+/** Canceled films for Soirée Rattrapage / Catch Up Day, ordered by programme date.
+ * Always includes announced cancellations (even a single film). Interactive voting is gated separately by [FestivalPublicConfig.rattrapageVotingOpen].
  */
-fun List<Screening>.canceledForRattrapage(excludingRattrapageId: String? = null): List<Screening> {
-    val canceled =
-        filter { screening ->
-            (screening.isCanceled || RattrapageVotingDebug.isPretendCanceled(screening.id)) &&
-                screening.isProgramAnnounced &&
-                !screening.isRattrapageEvening &&
-                screening.id != excludingRattrapageId
-        }.sortedBy { it.startsAt }
-    return if (canceled.size > 1) canceled else emptyList()
-}
+fun List<Screening>.canceledForRattrapage(excludingRattrapageId: String? = null): List<Screening> =
+    filter { screening ->
+        (screening.isCanceled || RattrapageVotingDebug.isPretendCanceled(screening.id)) &&
+            screening.isProgramAnnounced &&
+            !screening.isRattrapageEvening &&
+            screening.id != excludingRattrapageId
+    }.sortedBy { it.startsAt }
 
 /** Screenings scheduled on [date] in Geneva (includes canceled). */
 fun List<Screening>.screeningsOn(date: LocalDate): List<Screening> =

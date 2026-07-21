@@ -10,6 +10,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -17,11 +20,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.ImageLoader
 import coil.decode.SvgDecoder
+import com.heewhack.cinetransat.data.FestivalZone
 import com.heewhack.cinetransat.ui.LocalWatchListStatsRepository
 import com.heewhack.cinetransat.notifications.CancellationNotificationManager
 import com.heewhack.cinetransat.ui.AppReviewPromptDialog
@@ -37,6 +42,8 @@ import com.heewhack.cinetransat.ui.CineTransatApp
 import com.heewhack.cinetransat.ui.splash.FestivalSplashScreen
 import com.heewhack.cinetransat.ui.theme.CineTransatTheme
 import com.heewhack.cinetransat.calendar.ScreeningCalendarService
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -77,6 +84,7 @@ class MainActivity : ComponentActivity() {
             var pendingSeasonYear by remember { mutableStateOf<Int?>(null) }
             var pendingSettingsEnable by remember { mutableStateOf(false) }
             var pendingCalendarPermissionCallback by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
+            var showRattrapageVotingOpenAlert by remember { mutableStateOf(false) }
             val screeningIdFromNotification by pendingScreeningId
 
             val permissionLauncher =
@@ -140,12 +148,16 @@ class MainActivity : ComponentActivity() {
                                         watchListRepository.syncWithFirestore()
                                         showSplash = false
                                         reviewPrompt.setMainUiVisible(true)
-                                        if (!notificationManager.shouldShowFirstLaunchPrompt()) return@launch
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                            pendingSeasonYear = seasonYear
-                                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                        } else {
-                                            notificationManager.handleFirstLaunchPrompt(seasonYear) { true }
+                                        if (notificationManager.shouldShowFirstLaunchPrompt()) {
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                                pendingSeasonYear = seasonYear
+                                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                            } else {
+                                                notificationManager.handleFirstLaunchPrompt(seasonYear) { true }
+                                            }
+                                        }
+                                        if (shouldShowRattrapageVotingOpenPrompt(seasonYear, programStore.state.value.publicConfig.rattrapageVotingOpen)) {
+                                            showRattrapageVotingOpenAlert = true
                                         }
                                     }
                                 },
@@ -179,6 +191,19 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onDismissRequest = {
                                     reviewPrompt.dismissWithoutAction()
+                                },
+                            )
+                        }
+
+                        if (showRattrapageVotingOpenAlert) {
+                            AlertDialog(
+                                onDismissRequest = { showRattrapageVotingOpenAlert = false },
+                                title = { Text(stringResource(R.string.rattrapage_voting_open_title)) },
+                                text = { Text(stringResource(R.string.rattrapage_voting_open_message)) },
+                                confirmButton = {
+                                    TextButton(onClick = { showRattrapageVotingOpenAlert = false }) {
+                                        Text(stringResource(R.string.rattrapage_voting_open_ok))
+                                    }
                                 },
                             )
                         }
@@ -222,4 +247,18 @@ class MainActivity : ComponentActivity() {
     private fun Intent.screeningIdFromNotification(): String? =
         getStringExtra(CancellationNotificationManager.EXTRA_SCREENING_ID)
             ?: getStringExtra("screeningId")
+
+    private fun shouldShowRattrapageVotingOpenPrompt(seasonYear: Int, votingOpen: Boolean): Boolean {
+        if (!votingOpen) return false
+        val prefs = getSharedPreferences(RATTRAPAGE_VOTING_PROMPT_PREFS, MODE_PRIVATE)
+        val today = LocalDate.now(FestivalZone).format(DateTimeFormatter.BASIC_ISO_DATE)
+        val key = "shown.$seasonYear"
+        if (prefs.getString(key, null) == today) return false
+        prefs.edit().putString(key, today).apply()
+        return true
+    }
+
+    companion object {
+        private const val RATTRAPAGE_VOTING_PROMPT_PREFS = "rattrapage_voting_open_prompt"
+    }
 }

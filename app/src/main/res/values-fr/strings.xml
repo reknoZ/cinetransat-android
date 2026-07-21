@@ -68,6 +68,9 @@
     <string name="rattrapage_votes_one">1 vote</string>
     <string name="rattrapage_votes_many">%d votes</string>
     <string name="rattrapage_voting_closed">Le vote n’est pas encore ouvert.</string>
+    <string name="rattrapage_voting_open_title">Le vote est ouvert !</string>
+    <string name="rattrapage_voting_open_message">Choisissez le film annulé que vous voulez vraiment voir lors de la soirée rattrapage.</string>
+    <string name="rattrapage_voting_open_ok">OK</string>
 
     <string name="notification_cancel_title">Séance annulée</string>
     <string name="notification_cancel_body">%1$s — %2$s. Séance annulée (intempéries).</string>
