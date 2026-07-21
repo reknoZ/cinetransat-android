@@ -9,6 +9,7 @@ import com.heewhack.cinetransat.data.FestivalProgramStore
 import com.heewhack.cinetransat.data.ProgramWeekRepository
 import com.heewhack.cinetransat.data.WatchListRepository
 import com.heewhack.cinetransat.data.WatchListStatsRepository
+import com.heewhack.cinetransat.data.RattrapageVotesRepository
 
 val LocalComponentActivity =
     staticCompositionLocalOf<ComponentActivity> {
@@ -33,6 +34,11 @@ val LocalWatchListStatsRepository =
 val LocalWatchListRepository =
     staticCompositionLocalOf<WatchListRepository> {
         error("WatchListRepository not provided")
+    }
+
+val LocalRattrapageVotesRepository =
+    staticCompositionLocalOf<RattrapageVotesRepository> {
+        error("RattrapageVotesRepository not provided")
     }
 
 val LocalFestivalProgramStore =

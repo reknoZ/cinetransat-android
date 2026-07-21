@@ -31,6 +31,7 @@ enum class FestivalDataSource {
 data class FestivalProgramUiState(
     val weeks: List<FestivalWeek> = emptyList(),
     val seasonYear: Int = FestivalPublicConfig.DEFAULT_SEASON_YEAR,
+    val availableSeasonYears: List<Int> = FestivalProgramStore.defaultAvailableSeasonYears,
     val publicConfig: FestivalPublicConfig = FestivalPublicConfig.defaults,
     val source: FestivalDataSource = FestivalDataSource.BUNDLED,
     val isLoading: Boolean = false,
@@ -67,6 +68,7 @@ class FestivalProgramStore(
         attachSeasonListener(_state.value.publicConfig.currentSeasonYear)
         scope.launch {
             refreshFromServer()
+            refreshSeasonCatalog()
             CancellationNotificationManager.getInstance(appContext)
                 .syncSubscriptionIfNeeded(_state.value.publicConfig.currentSeasonYear)
             postLaunchSetupComplete = true
@@ -78,11 +80,28 @@ class FestivalProgramStore(
         if (configListener == null) {
             startListening()
         }
-        val year = _state.value.publicConfig.currentSeasonYear
+        val year = _state.value.seasonYear
         if (seasonListener == null || listeningSeasonYear != year) {
             attachSeasonListener(year)
         }
         scope.launch { refreshFromServer() }
+    }
+
+    fun selectSeason(year: Int) {
+        if (_state.value.seasonYear == year) return
+        attachSeasonListener(year)
+        scope.launch {
+            try {
+                val seasonSnap =
+                    firestore.document(FirestorePaths.season(year)).get(Source.SERVER).await()
+                seasonSnap.data?.let { data ->
+                    applyProgramDocument(data, FestivalDataSource.FIRESTORE, year)
+                    cacheProgramDocument(data, year)
+                }
+            } catch (error: Exception) {
+                Log.w(TAG, "Season $year fetch failed: ${error.message}")
+            }
+        }
     }
 
     suspend fun refreshFromServer() {
@@ -95,7 +114,13 @@ class FestivalProgramStore(
         }
 
         try {
-            val year = _state.value.publicConfig.currentSeasonYear
+            refreshSeasonCatalog()
+        } catch (error: Exception) {
+            Log.w(TAG, "Season catalog fetch failed: ${error.message}")
+        }
+
+        try {
+            val year = _state.value.seasonYear
             val seasonSnap =
                 firestore.document(FirestorePaths.season(year)).get(Source.SERVER).await()
             seasonSnap.data?.let { data ->
@@ -106,6 +131,17 @@ class FestivalProgramStore(
             }
         } catch (error: Exception) {
             Log.w(TAG, "Season server fetch failed: ${error.message}")
+        }
+    }
+
+    suspend fun refreshSeasonCatalog() {
+        val snapshot = firestore.collection(FirestorePaths.SEASONS_COLLECTION).get().await()
+        val years =
+            snapshot.documents
+                .mapNotNull { it.id.toIntOrNull() }
+                .sortedDescending()
+        if (years.isNotEmpty()) {
+            _state.update { it.copy(availableSeasonYears = years) }
         }
     }
 
@@ -216,6 +252,9 @@ class FestivalProgramStore(
         seasonYear: Int,
         weeks: List<FestivalWeek>,
     ) {
+        // Past / archive seasons must never fire cancellation alerts.
+        if (seasonYear != _state.value.publicConfig.currentSeasonYear) return
+
         synchronized(cancellationLock) {
             val canceledNow = weeks.flatMap { it.orderedScreenings }.filter { it.isCanceled }
             val canceledIdsNow = canceledNow.map { it.id }.toSet()
@@ -236,10 +275,12 @@ class FestivalProgramStore(
             }
 
             val known = knownCanceledPrefs.getStringSet(knownKey, null)?.toSet() ?: emptySet()
-            val newlyCanceled = canceledNow.filter { it.id !in known }
-            if (newlyCanceled.isNotEmpty()) {
+            // Only alert for films canceled on their screening day (Geneva calendar).
+            val newlyCanceledToday =
+                canceledNow.filter { it.id !in known && it.isFestivalDayToday }
+            if (newlyCanceledToday.isNotEmpty()) {
                 CancellationNotificationManager.getInstance(appContext)
-                    .handleNewlyCanceled(newlyCanceled, seasonYear)
+                    .handleNewlyCanceled(newlyCanceledToday, seasonYear)
             }
 
             knownCanceledPrefs.edit()
@@ -266,22 +307,20 @@ class FestivalProgramStore(
     ) {
         try {
             val config = FestivalPublicConfig.decodeFromFirestore(data)
-            val previousYear = _state.value.publicConfig.currentSeasonYear
-            _state.update {
-                it.copy(
-                    publicConfig = config,
-                    seasonYear = config.currentSeasonYear,
-                )
-            }
+            val previousConfigYear = _state.value.publicConfig.currentSeasonYear
+            _state.update { it.copy(publicConfig = config) }
             if (fromServer) {
                 Log.d(TAG, "publicConfig loaded from server (season ${config.currentSeasonYear})")
                 notifyWatchListStatsSync(config.currentSeasonYear)
             }
-            attachSeasonListener(config.currentSeasonYear)
-            if (config.currentSeasonYear != previousYear) {
+            if (listeningSeasonYear == null) {
+                attachSeasonListener(config.currentSeasonYear)
+            }
+            if (config.currentSeasonYear != previousConfigYear) {
                 scope.launch {
                     CancellationNotificationManager.getInstance(appContext)
                         .syncSubscriptionIfNeeded(config.currentSeasonYear)
+                    refreshSeasonCatalog()
                 }
             }
         } catch (error: Exception) {
@@ -338,5 +377,10 @@ class FestivalProgramStore(
 
     companion object {
         private const val TAG = "FestivalProgramStore"
+
+        val defaultAvailableSeasonYears: List<Int> =
+            listOf(FestivalPublicConfig.DEFAULT_SEASON_YEAR, 2025)
+                .distinct()
+                .sortedDescending()
     }
 }

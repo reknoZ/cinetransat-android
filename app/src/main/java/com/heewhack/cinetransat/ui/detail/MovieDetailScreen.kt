@@ -1,13 +1,19 @@
 package com.heewhack.cinetransat.ui.detail
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,10 +22,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Event
@@ -27,6 +35,7 @@ import androidx.compose.material.icons.filled.FamilyRestroom
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.MovieCreation
 import androidx.compose.material.icons.filled.PanTool
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.Theaters
@@ -45,13 +54,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -68,6 +80,7 @@ import com.heewhack.cinetransat.R
 import com.heewhack.cinetransat.data.AppLanguage
 import com.heewhack.cinetransat.data.ExternalFilmLinks
 import com.heewhack.cinetransat.data.Screening
+import com.heewhack.cinetransat.data.canceledForRattrapage
 import com.heewhack.cinetransat.data.localizedSynopsis
 import com.heewhack.cinetransat.data.localizedTitle
 import com.heewhack.cinetransat.data.localizedAudioLanguage
@@ -77,6 +90,7 @@ import com.heewhack.cinetransat.data.rememberFestivalLocale
 import com.heewhack.cinetransat.calendar.ScreeningCalendarService
 import com.heewhack.cinetransat.ui.LocalComponentActivity
 import com.heewhack.cinetransat.ui.LocalFestivalProgramStore
+import com.heewhack.cinetransat.ui.LocalRattrapageVotesRepository
 import com.heewhack.cinetransat.ui.LocalWatchListRepository
 import com.heewhack.cinetransat.ui.LocalWatchListStatsRepository
 import com.heewhack.cinetransat.ui.watchlistInterestLabel
@@ -268,6 +282,7 @@ fun MovieDetailScreen(
     onNavigateUp: () -> Unit,
     modifier: Modifier = Modifier,
     showUpNavigation: Boolean = true,
+    showNavButtons: Boolean = true,
 ) {
     if (screenings.isEmpty()) return
 
@@ -318,14 +333,18 @@ fun MovieDetailScreen(
         ) { page ->
             val item = screenings[page]
             key(item.id, watchIds.contains(item.id)) {
-                DetailBody(
+                    DetailBody(
                     screening = item,
                     appLanguage = appLanguage,
+                    lineupScreenings = screenings,
                     onOpenImdb = { uriHandler.openUri(ExternalFilmLinks.imdbSearchUri(item.searchTitle).toString()) },
                     onOpenAllocine = { uriHandler.openUri(ExternalFilmLinks.allocineSearchUri(item.searchTitle).toString()) },
                     pagerState = pagerState,
+                    showNavButtons = showNavButtons,
                     onToggleWatch = {
-                        scope.launch { watchRepo.toggle(item.id, seasonYear) }
+                        if (!item.hasPassed) {
+                            scope.launch { watchRepo.toggle(item.id, seasonYear) }
+                        }
                     },
                 )
             }
@@ -337,9 +356,11 @@ fun MovieDetailScreen(
 private fun DetailBody(
     screening: Screening,
     appLanguage: AppLanguage,
+    lineupScreenings: List<Screening>,
     onOpenImdb: () -> Unit,
     onOpenAllocine: () -> Unit,
     pagerState: PagerState,
+    showNavButtons: Boolean = true,
     onToggleWatch: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -352,6 +373,9 @@ private fun DetailBody(
     val timeFormatter = rememberTimeFormatter()
     val contentModifier = Modifier.widthIn(max = 720.dp).fillMaxWidth()
     val activity = LocalComponentActivity.current
+    val programStore = LocalFestivalProgramStore.current
+    val programState by programStore.state.collectAsStateWithLifecycle()
+    val seasonYear = programState.seasonYear
 
     DisposableEffect(screening.id) {
         statsRepo.startObserving(screening.id)
@@ -374,19 +398,21 @@ private fun DetailBody(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(
-                onClick = {
-                    if (pagerState.currentPage > 0) {
-                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
-                    }
-                },
-                enabled = pagerState.currentPage > 0,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.ChevronLeft,
-                    contentDescription = stringResource(R.string.detail_previous_film),
-                    modifier = Modifier.size(28.dp),
-                )
+            if (showNavButtons) {
+                IconButton(
+                    onClick = {
+                        if (pagerState.currentPage > 0) {
+                            scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                        }
+                    },
+                    enabled = pagerState.currentPage > 0,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ChevronLeft,
+                        contentDescription = stringResource(R.string.detail_previous_film),
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
             }
 
             Box(contentAlignment = Alignment.BottomEnd) {
@@ -395,53 +421,60 @@ private fun DetailBody(
                     compact = false,
                     modifier = Modifier.widthIn(max = 238.dp),
                 )
-                Surface(
-                    modifier =
-                        Modifier
-                            .padding(4.dp)
-                            .size(32.dp),
-                    shape = androidx.compose.foundation.shape.CircleShape,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                    shadowElevation = 2.dp,
-                ) {
-                    IconButton(
-                        onClick = onToggleWatch,
-                        modifier = Modifier.size(32.dp),
+                val watchListInteractive = !screening.hasPassed
+                if (watchListInteractive || inWatchList) {
+                    Surface(
+                        modifier =
+                            Modifier
+                                .padding(4.dp)
+                                .size(32.dp)
+                                .graphicsLayer { alpha = if (watchListInteractive) 1f else 0.45f },
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                        shadowElevation = 2.dp,
                     ) {
-                        Icon(
-                            imageVector = if (inWatchList) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                            contentDescription =
-                                if (inWatchList) {
-                                    stringResource(R.string.watchlist_remove)
-                                } else {
-                                    stringResource(R.string.watchlist_add)
-                                },
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
+                        IconButton(
+                            onClick = onToggleWatch,
+                            enabled = watchListInteractive,
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                imageVector = if (inWatchList) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                                contentDescription =
+                                    if (inWatchList) {
+                                        stringResource(R.string.watchlist_remove)
+                                    } else {
+                                        stringResource(R.string.watchlist_add)
+                                    },
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                 }
             }
 
-            IconButton(
-                onClick = {
-                    if (pagerState.currentPage < pagerState.pageCount - 1) {
-                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
-                    }
-                },
-                enabled = pagerState.currentPage < pagerState.pageCount - 1,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.ChevronRight,
-                    contentDescription = stringResource(R.string.detail_next_film),
-                    modifier = Modifier.size(28.dp),
-                )
+            if (showNavButtons) {
+                IconButton(
+                    onClick = {
+                        if (pagerState.currentPage < pagerState.pageCount - 1) {
+                            scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                        }
+                    },
+                    enabled = pagerState.currentPage < pagerState.pageCount - 1,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ChevronRight,
+                        contentDescription = stringResource(R.string.detail_next_film),
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
             }
         }
 
         Column(
             modifier = contentModifier,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (screening.isCanceled) {
                 Row(
@@ -494,11 +527,13 @@ private fun DetailBody(
 
             ScreeningFactsRow(screening = screening, timeFormatter = timeFormatter)
 
-            ScreeningLanguageRow(
-                screening = screening,
-                appLanguage = appLanguage,
-                modifier = contentModifier,
-            )
+            if (!screening.isRattrapageEvening) {
+                ScreeningLanguageRow(
+                    screening = screening,
+                    appLanguage = appLanguage,
+                    modifier = contentModifier,
+                )
+            }
 
             if (!screening.isCanceled) {
                 OutlinedButton(
@@ -526,14 +561,230 @@ private fun DetailBody(
             Text(
                 text = screening.localizedSynopsis(appLanguage),
                 style = MaterialTheme.typography.bodyLarge,
+                modifier = contentModifier,
             )
 
-            ExternalLinksRow(
-                modifier = contentModifier,
-                linksEnabled = screening.externalSearchLinksEnabled,
-                releaseYear = screening.releaseYear,
-                onOpenImdb = onOpenImdb,
-                onOpenAllocine = onOpenAllocine,
+            if (screening.isRattrapageEvening) {
+                val canceled =
+                    programState.allScreenings.canceledForRattrapage(
+                        excludingRattrapageId = screening.id,
+                    )
+                if (canceled.isNotEmpty()) {
+                    RattrapageDetailSection(
+                        canceledScreenings = canceled,
+                        seasonYear = seasonYear,
+                        votingOpen = programState.publicConfig.rattrapageVotingOpen,
+                        appLanguage = appLanguage,
+                        onOpenScreening = { canceledId ->
+                            val index = lineupScreenings.indexOfFirst { it.id == canceledId }
+                            if (index >= 0) {
+                                scope.launch { pagerState.animateScrollToPage(index) }
+                            }
+                        },
+                        modifier = contentModifier,
+                    )
+                }
+            }
+
+            if (screening.externalSearchLinksEnabled || screening.releaseYear != null) {
+                ExternalLinksRow(
+                    modifier = contentModifier,
+                    linksEnabled = screening.externalSearchLinksEnabled,
+                    releaseYear = screening.releaseYear,
+                    onOpenImdb = onOpenImdb,
+                    onOpenAllocine = onOpenAllocine,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RattrapageDetailSection(
+    canceledScreenings: List<Screening>,
+    seasonYear: Int,
+    votingOpen: Boolean,
+    appLanguage: AppLanguage,
+    onOpenScreening: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val votesRepo = LocalRattrapageVotesRepository.current
+    val votedIds by votesRepo.votedScreeningIds.collectAsStateWithLifecycle()
+    val voteCounts by votesRepo.voteCounts.collectAsStateWithLifecycle()
+    val totalVotes = voteCounts.values.sum()
+
+    LaunchedEffect(canceledScreenings.map { it.id }, seasonYear, votingOpen) {
+        if (votingOpen) {
+            votesRepo.startObserving(
+                screeningIds = canceledScreenings.map { it.id },
+                seasonYear = seasonYear,
+            )
+        } else {
+            votesRepo.stopAllObservations()
+        }
+    }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.Start,
+    ) {
+        if (votingOpen) {
+            Text(
+                text = stringResource(R.string.rattrapage_canceled_heading),
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            canceledScreenings.forEach { canceled ->
+                val voted = canceled.id in votedIds
+                val count = voteCounts[canceled.id] ?: 0
+                val share = if (totalVotes > 0) count.toFloat() / totalVotes.toFloat() else 0f
+                RattrapagePollOptionRow(
+                    title = canceled.localizedTitle(appLanguage),
+                    voted = voted,
+                    voteCount = count,
+                    share = share,
+                    onToggleVote = { votesRepo.toggleVote(canceled.id, seasonYear) },
+                    onOpenDetail = { onOpenScreening(canceled.id) },
+                )
+            }
+            if (totalVotes > 0) {
+                Text(
+                    text =
+                        if (totalVotes == 1) {
+                            stringResource(R.string.rattrapage_votes_one)
+                        } else {
+                            stringResource(R.string.rattrapage_votes_many, totalVotes)
+                        },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            Text(
+                text = stringResource(R.string.rattrapage_canceled_heading),
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            canceledScreenings.forEach { canceled ->
+                Text(
+                    text = canceled.localizedTitle(appLanguage),
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenScreening(canceled.id) }
+                            .padding(vertical = 8.dp),
+                )
+            }
+            Text(
+                text = stringResource(R.string.rattrapage_voting_closed),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RattrapagePollOptionRow(
+    title: String,
+    voted: Boolean,
+    voteCount: Int,
+    share: Float,
+    onToggleVote: () -> Unit,
+    onOpenDetail: () -> Unit,
+) {
+    val animatedShare by animateFloatAsState(
+        targetValue = share.coerceIn(0f, 1f),
+        animationSpec = spring(dampingRatio = 0.82f, stiffness = 400f),
+        label = "rattrapageVoteShare",
+    )
+    val shape = RoundedCornerShape(10.dp)
+    val fillColor =
+        if (voted) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+        } else {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+        }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .height(48.dp)
+                    .clip(shape)
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                    .clickable(onClick = onToggleVote),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(animatedShare)
+                        .background(fillColor),
+            )
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .align(Alignment.CenterStart),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Icon(
+                    imageVector =
+                        if (voted) {
+                            Icons.Filled.CheckCircle
+                        } else {
+                            Icons.Filled.RadioButtonUnchecked
+                        },
+                    contentDescription =
+                        stringResource(
+                            if (voted) {
+                                R.string.rattrapage_vote_remove
+                            } else {
+                                R.string.rattrapage_vote_add
+                            },
+                        ),
+                    tint =
+                        if (voted) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    modifier = Modifier.size(22.dp),
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.weight(1f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "$voteCount",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color =
+                        if (voted) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                )
+            }
+        }
+        IconButton(onClick = onOpenDetail) {
+            Icon(
+                imageVector = Icons.Filled.ChevronRight,
+                contentDescription = title,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
             )
         }
     }
@@ -547,64 +798,61 @@ private fun ExternalLinksRow(
     onOpenAllocine: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val linkColor =
-        if (linksEnabled) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        }
-    val yearLabel = stringResource(R.string.detail_film_year)
+    if (!linksEnabled && releaseYear == null) return
+
+    val linkColor = MaterialTheme.colorScheme.primary
 
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ExternalLinkChip(
-                enabled = linksEnabled,
-                onClick = onOpenImdb,
-                linkColor = linkColor,
+        if (linksEnabled) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.MovieCreation,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = linkColor,
-                )
-                Text(
-                    text = stringResource(R.string.detail_search_imdb),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = linkColor,
-                )
-            }
-            ExternalLinkChip(
-                enabled = linksEnabled,
-                onClick = onOpenAllocine,
-                linkColor = linkColor,
-            ) {
-                Text(
-                    text = "🍿",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text = stringResource(R.string.detail_search_allocine),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = linkColor,
-                )
+                ExternalLinkChip(
+                    enabled = true,
+                    onClick = onOpenImdb,
+                    linkColor = linkColor,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.MovieCreation,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = linkColor,
+                    )
+                    Text(
+                        text = stringResource(R.string.detail_search_imdb),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = linkColor,
+                    )
+                }
+                ExternalLinkChip(
+                    enabled = true,
+                    onClick = onOpenAllocine,
+                    linkColor = linkColor,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Theaters,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = linkColor,
+                    )
+                    Text(
+                        text = stringResource(R.string.detail_search_allocine),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = linkColor,
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        releaseYear?.let { year ->
+        if (releaseYear != null) {
             Text(
-                text = year.toString(),
-                modifier = Modifier.semantics {
-                    contentDescription = yearLabel
-                },
+                text = releaseYear.toString(),
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

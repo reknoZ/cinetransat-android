@@ -166,15 +166,16 @@ class CancellationNotificationManager private constructor(
             _isEnabled.value = enabled
         }
         refreshPermissionStatus()
-        if (!enabled || screenings.isEmpty() || !canPostNotifications()) {
+        val tonight = screenings.filter { it.isFestivalDayToday }
+        if (!enabled || tonight.isEmpty() || !canPostNotifications()) {
             Log.d(
                 TAG,
-                "Skip local cancel alert enabled=$enabled count=${screenings.size} canPost=${canPostNotifications()}",
+                "Skip local cancel alert enabled=$enabled count=${tonight.size} canPost=${canPostNotifications()}",
             )
             return
         }
         val language = currentAppLanguage()
-        for (screening in screenings) {
+        for (screening in tonight) {
             showScreeningCanceledNotification(screening, seasonYear, language)
         }
     }

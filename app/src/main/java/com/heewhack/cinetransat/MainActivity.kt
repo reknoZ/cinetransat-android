@@ -24,12 +24,14 @@ import coil.ImageLoader
 import coil.decode.SvgDecoder
 import com.heewhack.cinetransat.ui.LocalWatchListStatsRepository
 import com.heewhack.cinetransat.notifications.CancellationNotificationManager
+import com.heewhack.cinetransat.ui.AppReviewPromptDialog
 import com.heewhack.cinetransat.ui.LocalFestivalImageLoader
 import com.heewhack.cinetransat.ui.LocalFestivalProgramStore
 import com.heewhack.cinetransat.ui.LocalAppLanguageRepository
 import com.heewhack.cinetransat.ui.LocalComponentActivity
 import com.heewhack.cinetransat.ui.LocalProgramWeekRepository
 import com.heewhack.cinetransat.ui.LocalWatchListRepository
+import com.heewhack.cinetransat.ui.LocalRattrapageVotesRepository
 import com.heewhack.cinetransat.ui.ProvideAppLocale
 import com.heewhack.cinetransat.ui.CineTransatApp
 import com.heewhack.cinetransat.ui.splash.FestivalSplashScreen
@@ -58,10 +60,13 @@ class MainActivity : ComponentActivity() {
         val app = application as CineTransatApplication
         val watchListRepository = app.watchListRepository
         val watchListStatsRepository = app.watchListStatsRepository
+        val rattrapageVotesRepository = app.rattrapageVotesRepository
         val programStore = app.programStore
         val notificationManager = app.cancellationNotificationManager
         val appLanguageRepository = app.appLanguageRepository
         val programWeekRepository = app.programWeekRepository
+        val reviewPrompt = app.appReviewPromptController
+        reviewPrompt.bind(this)
 
         setContent {
             val scope = rememberCoroutineScope()
@@ -112,12 +117,16 @@ class MainActivity : ComponentActivity() {
                 LocalFestivalImageLoader provides imageLoader,
                 LocalWatchListRepository provides watchListRepository,
                 LocalWatchListStatsRepository provides watchListStatsRepository,
+                LocalRattrapageVotesRepository provides rattrapageVotesRepository,
                 LocalFestivalProgramStore provides programStore,
                 LocalAppLanguageRepository provides appLanguageRepository,
                 LocalProgramWeekRepository provides programWeekRepository,
             ) {
                 ProvideAppLocale(appLanguage) {
                     CineTransatTheme(dynamicColor = false) {
+                        val presentingReview by reviewPrompt.isPresentingPrompt.collectAsStateWithLifecycle()
+                        val pendingReviewFeedback by reviewPrompt.pendingFeedback.collectAsStateWithLifecycle()
+
                         if (showSplash) {
                             FestivalSplashScreen(
                                 isLoading = launchIsLoading,
@@ -130,6 +139,7 @@ class MainActivity : ComponentActivity() {
                                         val seasonYear = programStore.state.value.publicConfig.currentSeasonYear
                                         watchListRepository.syncWithFirestore()
                                         showSplash = false
+                                        reviewPrompt.setMainUiVisible(true)
                                         if (!notificationManager.shouldShowFirstLaunchPrompt()) return@launch
                                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                             pendingSeasonYear = seasonYear
@@ -160,6 +170,27 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         }
+
+                        if (presentingReview) {
+                            AppReviewPromptDialog(
+                                onSubmit = reviewPrompt::submitRating,
+                                onNotNow = {
+                                    reviewPrompt.dismissWithoutAction()
+                                },
+                                onDismissRequest = {
+                                    reviewPrompt.dismissWithoutAction()
+                                },
+                            )
+                        }
+
+                        LaunchedEffect(pendingReviewFeedback) {
+                            if (!pendingReviewFeedback) return@LaunchedEffect
+                            reviewPrompt.clearPendingFeedback()
+                            val seasonYear = programStore.state.value.publicConfig.currentSeasonYear
+                            runCatching {
+                                AppSupport.openFeedback(this@MainActivity, seasonYear)
+                            }
+                        }
                     }
                 }
             }
@@ -169,11 +200,17 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         val app = application as CineTransatApplication
+        app.appReviewPromptController.onForeground()
         app.programStore.ensureListening()
         lifecycleScope.launch {
             app.watchListStatsRepository.flushPendingDeltas()
             app.watchListRepository.syncWithFirestore()
         }
+    }
+
+    override fun onPause() {
+        (application as CineTransatApplication).appReviewPromptController.onBackground()
+        super.onPause()
     }
 
     override fun onNewIntent(intent: Intent) {

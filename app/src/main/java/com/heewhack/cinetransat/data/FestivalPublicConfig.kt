@@ -8,6 +8,8 @@ data class FestivalPublicConfig(
     val facebookURL: String?,
     val instagramURL: String?,
     val posterBaseURL: String?,
+    /** When true, Soirée Rattrapage shows the interactive vote UI (CT Admin toggle). */
+    val rattrapageVotingOpen: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_SEASON_YEAR: Int = 2026
@@ -21,6 +23,7 @@ data class FestivalPublicConfig(
                 facebookURL = "https://www.facebook.com/cinetransat",
                 instagramURL = "https://www.instagram.com/cinetransat",
                 posterBaseURL = "https://cinetransat-497ce.web.app/posters/{posterKey}.jpg",
+                rattrapageVotingOpen = false,
             )
     }
 }
@@ -34,6 +37,14 @@ internal fun FestivalPublicConfig.Companion.decodeFromFirestore(data: Map<String
             ?: (data["seasonYear"] as? Number)?.toInt()
             ?: defaults.currentSeasonYear
 
+    val votingOpen =
+        when (val value = data["rattrapageVotingOpen"]) {
+            is Boolean -> value
+            is Number -> value.toInt() != 0
+            is String -> value.equals("true", ignoreCase = true) || value == "1"
+            else -> false
+        }
+
     return FestivalPublicConfig(
         currentSeasonYear = year,
         websiteURL = string("websiteURL", defaults.websiteURL),
@@ -42,5 +53,6 @@ internal fun FestivalPublicConfig.Companion.decodeFromFirestore(data: Map<String
         facebookURL = (data["facebookURL"] as? String)?.takeIf { it.isNotBlank() },
         instagramURL = (data["instagramURL"] as? String)?.takeIf { it.isNotBlank() },
         posterBaseURL = (data["posterBaseURL"] as? String)?.takeIf { it.isNotBlank() },
+        rattrapageVotingOpen = votingOpen,
     )
 }

@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
@@ -333,14 +334,19 @@ private fun WatchListScreen(
                                 onOpenDetail = {
                                     onOpenScreening(screening.id, screenings.map { it.id })
                                 },
-                                onBookmarkClick = {
-                                    if (isPendingRemoval) {
-                                        pendingRemovalId = null
+                                onBookmarkClick =
+                                    if (screening.hasPassed) {
+                                        null
                                     } else {
-                                        pendingRemovalId = screening.id
-                                        removalSecondsLeft = 5
-                                    }
-                                },
+                                        {
+                                            if (isPendingRemoval) {
+                                                pendingRemovalId = null
+                                            } else {
+                                                pendingRemovalId = screening.id
+                                                removalSecondsLeft = 5
+                                            }
+                                        }
+                                    },
                             )
                             Column(
                                 modifier =
@@ -417,8 +423,9 @@ private fun WatchListPosterCell(
     isPendingRemoval: Boolean,
     removalSecondsLeft: Int,
     onOpenDetail: () -> Unit,
-    onBookmarkClick: () -> Unit,
+    onBookmarkClick: (() -> Unit)?,
 ) {
+    val bookmarkInteractive = onBookmarkClick != null
     Box(
         modifier = Modifier.size(posterSize.width, posterSize.height),
         contentAlignment = Alignment.BottomEnd,
@@ -464,18 +471,25 @@ private fun WatchListPosterCell(
             modifier =
                 Modifier
                     .padding(4.dp)
-                    .size(32.dp),
+                    .size(32.dp)
+                    .graphicsLayer { alpha = if (bookmarkInteractive) 1f else 0.45f },
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
             shadowElevation = 2.dp,
         ) {
             IconButton(
-                onClick = onBookmarkClick,
+                onClick = { onBookmarkClick?.invoke() },
+                enabled = bookmarkInteractive,
                 modifier = Modifier.size(32.dp),
             ) {
                 Icon(
                     imageVector = Icons.Filled.Bookmark,
-                    contentDescription = stringResource(R.string.watchlist_remove),
+                    contentDescription =
+                        if (bookmarkInteractive) {
+                            stringResource(R.string.watchlist_remove)
+                        } else {
+                            null
+                        },
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.primary,
                 )

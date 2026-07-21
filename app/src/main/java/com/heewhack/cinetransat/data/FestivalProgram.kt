@@ -46,8 +46,38 @@ data class Screening(
     val isProgramAnnounced: Boolean
         get() = !usesTBDPlaceholderPoster
 
+    val isSoireeEvening: Boolean
+        get() {
+            val foldedTitle =
+                java.text.Normalizer.normalize(title, java.text.Normalizer.Form.NFD)
+                    .replace("\\p{M}+".toRegex(), "")
+                    .lowercase(Locale.ROOT)
+            if (foldedTitle.startsWith("soiree")) return true
+            if (foldedTitle == "choreoke") return true
+            val foldedKey =
+                java.text.Normalizer.normalize(posterKey, java.text.Normalizer.Form.NFD)
+                    .replace("\\p{M}+".toRegex(), "")
+                    .lowercase(Locale.ROOT)
+            return foldedKey.startsWith("soiree")
+        }
+
+    val isRattrapageEvening: Boolean
+        get() {
+            if (RattrapageVotingDebug.isPretendRattrapage(id)) return true
+            val foldedTitle =
+                java.text.Normalizer.normalize(title, java.text.Normalizer.Form.NFD)
+                    .replace("\\p{M}+".toRegex(), "")
+                    .lowercase(Locale.ROOT)
+            if (foldedTitle.contains("rattrapage")) return true
+            val foldedKey =
+                java.text.Normalizer.normalize(posterKey, java.text.Normalizer.Form.NFD)
+                    .replace("\\p{M}+".toRegex(), "")
+                    .lowercase(Locale.ROOT)
+            return foldedKey.contains("rattrapage")
+        }
+
     val externalSearchLinksEnabled: Boolean
-        get() = isProgramAnnounced && searchTitle.isNotBlank()
+        get() = isProgramAnnounced && !isSoireeEvening && searchTitle.isNotBlank()
 
     val releaseYear: Int?
         get() = PosterCatalog.releaseYear(posterKey)
@@ -60,8 +90,26 @@ data class Screening(
             return screeningDay < today
         }
 
+    /** True when this screening is scheduled for today in Geneva. */
+    val isFestivalDayToday: Boolean
+        get() = festivalDay == LocalDate.now(FestivalZone)
+
     val festivalDay: LocalDate
         get() = startsAt.withZoneSameInstant(FestivalZone).toLocalDate()
+}
+
+/** Canceled films for Soirée Rattrapage, ordered by programme date.
+ * Empty unless at least two announced screenings are canceled (voting needs a choice).
+ */
+fun List<Screening>.canceledForRattrapage(excludingRattrapageId: String? = null): List<Screening> {
+    val canceled =
+        filter { screening ->
+            (screening.isCanceled || RattrapageVotingDebug.isPretendCanceled(screening.id)) &&
+                screening.isProgramAnnounced &&
+                !screening.isRattrapageEvening &&
+                screening.id != excludingRattrapageId
+        }.sortedBy { it.startsAt }
+    return if (canceled.size > 1) canceled else emptyList()
 }
 
 /** Screenings scheduled on [date] in Geneva (includes canceled). */

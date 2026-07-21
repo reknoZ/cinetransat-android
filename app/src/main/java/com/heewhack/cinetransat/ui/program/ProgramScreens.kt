@@ -24,6 +24,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -96,9 +98,10 @@ fun ProgramPhoneScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        programNavigationTitle(programState.seasonYear),
-                        style = MaterialTheme.typography.titleMedium,
+                    ProgramSeasonNavigator(
+                        seasonYear = programState.seasonYear,
+                        availableYears = programState.availableSeasonYears,
+                        onSelectSeason = programStore::selectSeason,
                     )
                 },
                 windowInsets = WindowInsets(0),
@@ -293,9 +296,10 @@ fun ProgramTabletScreen(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(
-                            programNavigationTitle(programState.seasonYear),
-                            style = MaterialTheme.typography.titleMedium,
+                        ProgramSeasonNavigator(
+                            seasonYear = programState.seasonYear,
+                            availableYears = programState.availableSeasonYears,
+                            onSelectSeason = programStore::selectSeason,
                         )
                     },
                     windowInsets = WindowInsets(0),
@@ -549,6 +553,9 @@ private fun PosterCell(
     onOpenDetail: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val watchListInteractive = !screening.hasPassed
+    val showWatchListControl = watchListInteractive || inWatchlist
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -564,30 +571,34 @@ private fun PosterCell(
                 compact = compact,
                 fixedPosterSize = posterSize,
             )
-            Surface(
-                modifier =
-                    Modifier
-                        .padding(4.dp)
-                        .size(32.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                shadowElevation = 2.dp,
-            ) {
-                IconButton(
-                    onClick = onToggleWatch,
-                    modifier = Modifier.size(32.dp),
+            if (showWatchListControl) {
+                Surface(
+                    modifier =
+                        Modifier
+                            .padding(4.dp)
+                            .size(32.dp)
+                            .graphicsLayer { alpha = if (watchListInteractive) 1f else 0.45f },
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                    shadowElevation = 2.dp,
                 ) {
-                    Icon(
-                        imageVector = if (inWatchlist) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                        contentDescription =
-                            if (inWatchlist) {
-                                stringResource(R.string.watchlist_remove)
-                            } else {
-                                stringResource(R.string.watchlist_add)
-                            },
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
+                    IconButton(
+                        onClick = onToggleWatch,
+                        enabled = watchListInteractive,
+                        modifier = Modifier.size(32.dp),
+                    ) {
+                        Icon(
+                            imageVector = if (inWatchlist) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                            contentDescription =
+                                if (inWatchlist) {
+                                    stringResource(R.string.watchlist_remove)
+                                } else {
+                                    stringResource(R.string.watchlist_add)
+                                },
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
             }
         }
@@ -613,7 +624,64 @@ private fun PosterCell(
 }
 
 @Composable
-private fun programNavigationTitle(seasonYear: Int): String = seasonYear.toString()
+private fun ProgramSeasonNavigator(
+    seasonYear: Int,
+    availableYears: List<Int>,
+    onSelectSeason: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val years = availableYears.ifEmpty { listOf(seasonYear) }
+    val index = years.indexOf(seasonYear)
+    val olderYear = years.getOrNull(if (index >= 0) index + 1 else -1)
+    val newerYear = years.getOrNull(if (index > 0) index - 1 else -1)
+    val showsChevrons = years.size > 1
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start,
+    ) {
+        if (showsChevrons) {
+            IconButton(
+                onClick = { olderYear?.let(onSelectSeason) },
+                enabled = olderYear != null,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ChevronLeft,
+                    contentDescription = stringResource(R.string.program_season_older),
+                    tint =
+                        MaterialTheme.colorScheme.primary.copy(
+                            alpha = if (olderYear != null) 1f else 0.28f,
+                        ),
+                )
+            }
+        }
+        Text(
+            text = seasonYear.toString(),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.widthIn(min = 56.dp),
+            textAlign = TextAlign.Center,
+        )
+        if (showsChevrons) {
+            IconButton(
+                onClick = { newerYear?.let(onSelectSeason) },
+                enabled = newerYear != null,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = stringResource(R.string.program_season_newer),
+                    tint =
+                        MaterialTheme.colorScheme.primary.copy(
+                            alpha = if (newerYear != null) 1f else 0.28f,
+                        ),
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun ProgramMessage(

@@ -6,6 +6,7 @@ import com.heewhack.cinetransat.data.FestivalProgramStore
 import com.heewhack.cinetransat.data.ProgramWeekRepository
 import com.heewhack.cinetransat.data.WatchListRepository
 import com.heewhack.cinetransat.data.WatchListStatsRepository
+import com.heewhack.cinetransat.data.RattrapageVotesRepository
 import com.heewhack.cinetransat.notifications.CancellationNotificationManager
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
@@ -31,7 +32,13 @@ class CineTransatApplication : Application() {
     lateinit var watchListRepository: WatchListRepository
         private set
 
+    lateinit var rattrapageVotesRepository: RattrapageVotesRepository
+        private set
+
     lateinit var programWeekRepository: ProgramWeekRepository
+        private set
+
+    lateinit var appReviewPromptController: AppReviewPromptController
         private set
 
     override fun onCreate() {
@@ -48,8 +55,10 @@ class CineTransatApplication : Application() {
         cancellationNotificationManager.startupSyncSubscription()
         programStore = FestivalProgramStore(applicationContext)
         watchListStatsRepository = WatchListStatsRepository(applicationContext)
+        rattrapageVotesRepository = RattrapageVotesRepository(applicationContext)
         appLanguageRepository = AppLanguageRepository(applicationContext)
         programWeekRepository = ProgramWeekRepository(applicationContext)
+        appReviewPromptController = AppReviewPromptController(applicationContext)
         watchListRepository =
             WatchListRepository(
                 applicationContext,

@@ -67,4 +67,21 @@ object AppSupport {
             }
         context.startActivity(intent)
     }
+
+    fun openPlayStoreListing(context: Context) {
+        val packageName = context.packageName
+        val marketIntent =
+            Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        val webIntent =
+            Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://play.google.com/store/apps/details?id=$packageName"),
+            ).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        runCatching { context.startActivity(marketIntent) }
+            .onFailure { context.startActivity(webIntent) }
+    }
 }

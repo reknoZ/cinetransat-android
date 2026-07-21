@@ -12,13 +12,20 @@
     <string name="settings_language_hint">Choisissez la langue de l’application.</string>
     <string name="language_french">Français</string>
     <string name="language_english">English</string>
-    <string name="settings_about_app">À propos de CinéTransat</string>
+    <string name="settings_about_app">À propos de CinéTransat !</string>
     <string name="settings_about_version_label">Version</string>
     <string name="settings_copyright">Copyright © 2026 David Nitzsche-Bell</string>
     <string name="settings_send_feedback">Envoyer un commentaire</string>
     <string name="settings_rate_this_app">Noter cette app</string>
     <string name="settings_feedback_subject">CinéTransat — commentaire</string>
     <string name="settings_feedback_season">Saison %1$d</string>
+    <string name="review_prompt_title">Vous aimez cette app ?</string>
+    <string name="review_prompt_message">Touchez les étoiles pour noter, puis envoyez.</string>
+    <string name="review_prompt_rate">Noter</string>
+    <string name="review_prompt_write">Écrire un avis</string>
+    <string name="review_prompt_submit">Envoyer</string>
+    <string name="review_prompt_later">Plus tard</string>
+    <string name="review_prompt_star_count">%1$d étoiles</string>
 
     <string name="settings_cancellation_alerts_on">Alertes d\'annulation activées</string>
     <string name="settings_cancellation_alerts_off">Alertes d\'annulation désactivées</string>
@@ -54,6 +61,13 @@
     <string name="watchlist_others_one">1 autre l\'a aussi ajouté</string>
     <string name="watchlist_others_many">%d autres l\'ont aussi ajouté</string>
     <string name="watchlist_remove_countdown">Retrait dans %1$d s…</string>
+    <string name="rattrapage_none_canceled">Aucune séance n’a été annulée cette saison pour le moment.</string>
+    <string name="rattrapage_canceled_heading">Quel film annulé avez-vous vraiment envie de voir ?</string>
+    <string name="rattrapage_vote_add">Ajouter mon vote</string>
+    <string name="rattrapage_vote_remove">Retirer mon vote</string>
+    <string name="rattrapage_votes_one">1 vote</string>
+    <string name="rattrapage_votes_many">%d votes</string>
+    <string name="rattrapage_voting_closed">Le vote n’est pas encore ouvert.</string>
 
     <string name="notification_cancel_title">Séance annulée</string>
     <string name="notification_cancel_body">%1$s — %2$s. Séance annulée (intempéries).</string>
@@ -62,6 +76,8 @@
     <string name="notification_channel_cancellations_desc">Alertes lorsqu’une séance est annulée pour cause d’intempéries</string>
 
     <string name="program_season_title">Programme %1$d</string>
+    <string name="program_season_older">Saison précédente</string>
+    <string name="program_season_newer">Saison suivante</string>
     <string name="program_week_short">Semaine %1$d</string>
     <string name="program_week_header">Semaine %1$d · %2$s</string>
 </resources>

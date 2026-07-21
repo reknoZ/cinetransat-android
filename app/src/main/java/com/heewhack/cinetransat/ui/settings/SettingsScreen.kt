@@ -1,8 +1,5 @@
 package com.heewhack.cinetransat.ui.settings
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.heewhack.cinetransat.AppSupport
+import com.heewhack.cinetransat.CineTransatApplication
 import com.heewhack.cinetransat.R
 import com.heewhack.cinetransat.data.AppLanguage
 import com.heewhack.cinetransat.data.rememberAppLanguage
@@ -227,51 +225,6 @@ fun SettingsScreen(
             item { HorizontalDivider(color = pink.copy(alpha = 0.15f)) }
 
             item {
-                CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(0.dp),
-                    ) {
-                        TextButton(
-                            onClick = {
-                                runCatching {
-                                    AppSupport.openFeedback(context, seasonYear)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                            colors = textButtonColors,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.settings_send_feedback),
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Start,
-                                maxLines = 1,
-                            )
-                        }
-                        TextButton(
-                            onClick = { openStoreListing(context) },
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                            colors = textButtonColors,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.settings_rate_this_app),
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Start,
-                                maxLines = 1,
-                            )
-                        }
-                    }
-                }
-            }
-
-            item { HorizontalDivider(color = pink.copy(alpha = 0.15f)) }
-
-            item {
                 Column(
                     modifier =
                         Modifier
@@ -284,6 +237,48 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.titleSmall,
                         color = pink,
                     )
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(0.dp),
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    runCatching {
+                                        AppSupport.openFeedback(context, seasonYear)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
+                                colors = textButtonColors,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.settings_send_feedback),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Start,
+                                    maxLines = 1,
+                                )
+                            }
+                            TextButton(
+                                onClick = {
+                                    (context.applicationContext as? CineTransatApplication)
+                                        ?.appReviewPromptController
+                                        ?.markReviewActionCompleted()
+                                    AppSupport.openPlayStoreListing(context)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
+                                colors = textButtonColors,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.settings_rate_this_app),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Start,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -308,24 +303,6 @@ fun SettingsScreen(
                 }
             }
         }
-    }
-}
-
-private fun openStoreListing(context: android.content.Context) {
-    val packageName = context.packageName
-    val marketIntent =
-        Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-    val webIntent =
-        Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName")).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-
-    try {
-        context.startActivity(marketIntent)
-    } catch (_: ActivityNotFoundException) {
-        context.startActivity(webIntent)
     }
 }
 

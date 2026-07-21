@@ -23,5 +23,6 @@ fun TodayTabScreen(
         initialScreeningId = todayScreenings.first().id,
         onNavigateUp = {},
         showUpNavigation = false,
+        showNavButtons = false,
     )
 }
