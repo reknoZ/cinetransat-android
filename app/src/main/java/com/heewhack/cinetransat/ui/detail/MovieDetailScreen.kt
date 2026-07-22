@@ -640,11 +640,13 @@ private fun RattrapageDetailSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (votingOpen) {
-            Text(
-                text = stringResource(R.string.rattrapage_canceled_heading),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (canceledScreenings.size > 1) {
+                Text(
+                    text = stringResource(R.string.rattrapage_canceled_heading),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             canceledScreenings.forEach { canceled ->
                 val voted = canceled.id in votedIds
                 val count = voteCounts[canceled.id] ?: 0
