@@ -70,7 +70,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.heewhack.cinetransat.data.AppLanguage
 import com.heewhack.cinetransat.data.FestivalWeek
 import com.heewhack.cinetransat.data.Screening
-import com.heewhack.cinetransat.data.indexOfWeekFor
 import com.heewhack.cinetransat.data.localizedTitle
 import com.heewhack.cinetransat.data.rememberAppLanguage
 import com.heewhack.cinetransat.data.rememberFestivalLocale
@@ -86,12 +85,22 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ProgramPhoneScreen(
     onScreeningClick: (FestivalWeek, Screening) -> Unit,
-    programFocusGeneration: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val programStore = LocalFestivalProgramStore.current
     val programWeekRepository = LocalProgramWeekRepository.current
     val programState by programStore.state.collectAsStateWithLifecycle()
+    val weeks = programState.weeks
+    val seasonYear = programState.seasonYear
+    val initialPage =
+        remember(seasonYear, weeks) {
+            if (weeks.isEmpty()) {
+                0
+            } else {
+                programWeekRepository.weekPageIndex(seasonYear, weeks).coerceIn(0, weeks.lastIndex)
+            }
+        }
+    var displayedWeekIndex by remember(seasonYear, weeks) { mutableStateOf(initialPage) }
 
     Scaffold(
         modifier = modifier,
@@ -105,13 +114,19 @@ fun ProgramPhoneScreen(
                         onSelectSeason = programStore::selectSeason,
                     )
                 },
+                actions = {
+                    weeks.getOrNull(displayedWeekIndex)?.let { week ->
+                        WeekRangeChip(
+                            week = week,
+                            modifier = Modifier.padding(end = 8.dp),
+                        )
+                    }
+                },
                 windowInsets = WindowInsets(0),
                 expandedHeight = 44.dp,
             )
         },
     ) { innerPadding ->
-        val weeks = programState.weeks
-
         when {
             programState.isLoading && weeks.isEmpty() -> {
                 Box(
@@ -132,7 +147,6 @@ fun ProgramPhoneScreen(
                 )
             }
             else -> {
-                val seasonYear = programState.seasonYear
                 Column(
                     modifier =
                         Modifier
@@ -146,59 +160,50 @@ fun ProgramPhoneScreen(
                         )
                     }
                     key(seasonYear) {
-                    val savedPageIndex =
-                        remember(weeks) {
-                            programWeekRepository.weekPageIndex(seasonYear, weeks)
-                        }
-                    val pagerState =
-                        rememberPagerState(
-                            initialPage = savedPageIndex.coerceIn(0, weeks.lastIndex.coerceAtLeast(0)),
-                            pageCount = { weeks.size },
-                        )
-                    val pagerScope = rememberCoroutineScope()
-                    LaunchedEffect(pagerState, seasonYear, weeks) {
-                        snapshotFlow { pagerState.currentPage }.collect { page ->
-                            weeks.getOrNull(page)?.let { week ->
-                                programWeekRepository.saveSelectedWeek(seasonYear, week)
+                        val pagerState =
+                            rememberPagerState(
+                                initialPage = initialPage,
+                                pageCount = { weeks.size },
+                            )
+                        val pagerScope = rememberCoroutineScope()
+                        LaunchedEffect(pagerState, seasonYear, weeks) {
+                            snapshotFlow { pagerState.currentPage }.collect { page ->
+                                displayedWeekIndex = page
+                                weeks.getOrNull(page)?.let { week ->
+                                    programWeekRepository.saveSelectedWeek(seasonYear, week)
+                                }
                             }
                         }
-                    }
-                    LaunchedEffect(programFocusGeneration, seasonYear, weeks) {
-                        if (programFocusGeneration == 0 || weeks.isEmpty()) return@LaunchedEffect
-                        val targetPage = weeks.indexOfWeekFor().coerceIn(0, weeks.lastIndex)
-                        if (pagerState.currentPage != targetPage) {
-                            pagerState.animateScrollToPage(targetPage)
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.weight(1f),
+                            beyondViewportPageCount = 1,
+                        ) { page ->
+                            val week = weeks[page]
+                            WeekGrid(
+                                week = week,
+                                compact = true,
+                                showWeekHeader = false,
+                                onScreeningClick = onScreeningClick,
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 8.dp),
+                            )
                         }
-                    }
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.weight(1f),
-                        beyondViewportPageCount = 1,
-                    ) { page ->
-                        val week = weeks[page]
-                        WeekGrid(
-                            week = week,
-                            compact = true,
-                            onScreeningClick = onScreeningClick,
+                        PagerDots(
+                            pageCount = weeks.size,
+                            currentPage = pagerState.currentPage,
+                            onPageSelected = { index ->
+                                pagerScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            },
                             modifier =
                                 Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 8.dp),
+                                    .fillMaxWidth()
+                                    .padding(vertical = 2.dp),
                         )
-                    }
-                    PagerDots(
-                        pageCount = weeks.size,
-                        currentPage = pagerState.currentPage,
-                        onPageSelected = { index ->
-                            pagerScope.launch {
-                                pagerState.animateScrollToPage(index)
-                            }
-                        },
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 2.dp),
-                    )
                     }
                 }
             }
@@ -210,7 +215,6 @@ fun ProgramPhoneScreen(
 @Composable
 fun ProgramTabletScreen(
     onScreeningClick: (FestivalWeek, Screening) -> Unit,
-    programFocusGeneration: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val programStore = LocalFestivalProgramStore.current
@@ -231,11 +235,6 @@ fun ProgramTabletScreen(
     LaunchedEffect(selectedWeek, seasonYear) {
         val week = selectedWeek ?: return@LaunchedEffect
         programWeekRepository.saveSelectedWeek(seasonYear, week)
-    }
-
-    LaunchedEffect(programFocusGeneration, weeks, seasonYear) {
-        if (programFocusGeneration == 0 || weeks.isEmpty()) return@LaunchedEffect
-        selectedWeek = weeks[weeks.indexOfWeekFor()]
     }
 
     if (programState.isLoading && weeks.isEmpty()) {
@@ -305,6 +304,12 @@ fun ProgramTabletScreen(
                             onSelectSeason = programStore::selectSeason,
                         )
                     },
+                    actions = {
+                        WeekRangeChip(
+                            week = selectedWeek!!,
+                            modifier = Modifier.padding(end = 8.dp),
+                        )
+                    },
                     windowInsets = WindowInsets(0),
                     expandedHeight = 44.dp,
                 )
@@ -313,6 +318,7 @@ fun ProgramTabletScreen(
             WeekGrid(
                 week = selectedWeek!!,
                 compact = false,
+                showWeekHeader = false,
                 onScreeningClick = onScreeningClick,
                 modifier =
                     Modifier
@@ -372,6 +378,7 @@ private fun WeekGrid(
     compact: Boolean,
     onScreeningClick: (FestivalWeek, Screening) -> Unit,
     modifier: Modifier = Modifier,
+    showWeekHeader: Boolean = true,
 ) {
     val screenings = week.orderedScreenings
     if (screenings.size != 4) return
@@ -392,23 +399,10 @@ private fun WeekGrid(
         }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start,
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
-            ) {
-                Text(
-                    text = weekHeaderText(week),
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
+        if (showWeekHeader) {
+            WeekRangeChip(week = week)
+            Spacer(modifier = Modifier.height(10.dp))
         }
-        Spacer(Modifier.height(10.dp))
 
         BoxWithConstraints(
             modifier =
@@ -622,6 +616,27 @@ private fun PosterCell(
                     .width(posterSize.width)
                     .graphicsLayer { alpha = if (screening.hasPassed) 0.8f else 1f }
                     .clickable(onClick = onOpenDetail),
+        )
+    }
+}
+
+@Composable
+private fun WeekRangeChip(
+    week: FestivalWeek,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+    ) {
+        Text(
+            text = weekHeaderText(week),
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
         )
     }
 }

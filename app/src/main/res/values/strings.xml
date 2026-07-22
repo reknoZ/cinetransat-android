@@ -32,7 +32,7 @@
     <string name="settings_notifications_help">Get notified when a screening is canceled (rain or wind), even when the app is closed.</string>
     <string name="settings_notifications_denied">Allow notifications in Android Settings to receive alerts.</string>
 
-    <string name="detail_screening_canceled">Screening canceled</string>
+    <string name="detail_screening_canceled">Canceled</string>
     <string name="screening_passed">Passed</string>
     <string name="screening_canceled_badge">Canceled</string>
     <string name="calendar_add_one">Add to Calendar</string>
@@ -74,7 +74,7 @@
     <string name="rattrapage_voting_open_message">Choose which canceled film you most want to see on Catch Up Night.</string>
     <string name="rattrapage_voting_open_ok">OK</string>
 
-    <string name="notification_cancel_title">Screening canceled</string>
+    <string name="notification_cancel_title">Canceled</string>
     <string name="notification_cancel_body">%1$s — %2$s. Canceled due to weather.</string>
     <string name="notification_cancel_body_remote">%1$s. Canceled due to weather.</string>
     <string name="notification_channel_cancellations">Screening cancellations</string>

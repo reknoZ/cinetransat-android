@@ -58,7 +58,6 @@ fun CineTransatApp(
     val settingsTabIndex = infoTabIndex + 1
 
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    var programFocusGeneration by rememberSaveable { mutableIntStateOf(0) }
     var previousShowTodayTab by remember { mutableStateOf(showTodayTab) }
 
     LaunchedEffect(showTodayTab) {
@@ -66,12 +65,6 @@ fun CineTransatApp(
             selectedTab--
         }
         previousShowTodayTab = showTodayTab
-    }
-
-    LaunchedEffect(selectedTab, programTabIndex) {
-        if (selectedTab == programTabIndex) {
-            programFocusGeneration++
-        }
     }
 
     LaunchedEffect(pendingScreeningId, programTabIndex) {
@@ -202,14 +195,12 @@ fun CineTransatApp(
                         ProgramNavHost(
                             pendingScreeningId = pendingScreeningId,
                             onPendingScreeningHandled = onPendingScreeningHandled,
-                            programFocusGeneration = programFocusGeneration,
                         )
                     }
                 programTabIndex ->
                     ProgramNavHost(
                         pendingScreeningId = pendingScreeningId,
                         onPendingScreeningHandled = onPendingScreeningHandled,
-                        programFocusGeneration = programFocusGeneration,
                     )
                 watchlistTabIndex ->
                     WatchListNavHost(onRequestCalendarPermissions = onRequestCalendarPermissions)

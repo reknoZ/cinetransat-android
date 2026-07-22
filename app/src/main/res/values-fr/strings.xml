@@ -32,7 +32,7 @@
     <string name="settings_notifications_help">Recevez une notification si une séance est annulée (pluie ou vent), même lorsque l’app est fermée.</string>
     <string name="settings_notifications_denied">Autorisez les notifications dans les réglages Android pour recevoir les alertes.</string>
 
-    <string name="detail_screening_canceled">Séance annulée</string>
+    <string name="detail_screening_canceled">Annulé</string>
     <string name="screening_passed">Passé</string>
     <string name="screening_canceled_badge">Annulé</string>
     <string name="calendar_add_one">Ajouter au calendrier</string>
@@ -74,7 +74,7 @@
     <string name="rattrapage_voting_open_message">Choisissez le film annulé que vous voulez vraiment voir lors de la soirée rattrapage.</string>
     <string name="rattrapage_voting_open_ok">OK</string>
 
-    <string name="notification_cancel_title">Séance annulée</string>
+    <string name="notification_cancel_title">Annulé</string>
     <string name="notification_cancel_body">%1$s — %2$s. Séance annulée (intempéries).</string>
     <string name="notification_cancel_body_remote">%1$s. Séance annulée (intempéries).</string>
     <string name="notification_channel_cancellations">Annulations de séances</string>
