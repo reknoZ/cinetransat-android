@@ -629,10 +629,20 @@ private fun RattrapageDetailSection(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.Start,
     ) {
+        Text(
+            text =
+                if (canceledScreenings.size == 1) {
+                    stringResource(R.string.rattrapage_canceled_one)
+                } else {
+                    stringResource(R.string.rattrapage_canceled_many)
+                },
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         if (votingOpen) {
             Text(
                 text = stringResource(R.string.rattrapage_canceled_heading),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             canceledScreenings.forEach { canceled ->
@@ -661,11 +671,6 @@ private fun RattrapageDetailSection(
                 )
             }
         } else {
-            Text(
-                text = stringResource(R.string.rattrapage_canceled_heading),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             canceledScreenings.forEach { canceled ->
                 Text(
                     text = canceled.localizedTitle(appLanguage),

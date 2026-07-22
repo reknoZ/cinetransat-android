@@ -62,6 +62,8 @@
     <string name="watchlist_others_many">%d others added it too</string>
     <string name="watchlist_remove_countdown">Removing in %1$d…</string>
     <string name="rattrapage_none_canceled">No screenings have been canceled this season so far.</string>
+    <string name="rattrapage_canceled_one">Canceled movie</string>
+    <string name="rattrapage_canceled_many">Canceled movies</string>
     <string name="rattrapage_canceled_heading">Which movie that was canceled do you really want to see?</string>
     <string name="rattrapage_vote_add">Add my vote</string>
     <string name="rattrapage_vote_remove">Remove my vote</string>

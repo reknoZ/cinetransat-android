@@ -62,6 +62,8 @@
     <string name="watchlist_others_many">%d autres l\'ont aussi ajouté</string>
     <string name="watchlist_remove_countdown">Retrait dans %1$d s…</string>
     <string name="rattrapage_none_canceled">Aucune séance n’a été annulée cette saison pour le moment.</string>
+    <string name="rattrapage_canceled_one">Film annulé</string>
+    <string name="rattrapage_canceled_many">Films annulés</string>
     <string name="rattrapage_canceled_heading">Quel film annulé avez-vous vraiment envie de voir ?</string>
     <string name="rattrapage_vote_add">Ajouter mon vote</string>
     <string name="rattrapage_vote_remove">Retirer mon vote</string>

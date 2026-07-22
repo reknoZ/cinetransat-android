@@ -43,6 +43,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -130,8 +131,9 @@ fun ProgramPhoneScreen(
                             onDismiss = programStore::clearError,
                         )
                     }
+                    key(seasonYear) {
                     val savedPageIndex =
-                        remember(seasonYear, weeks) {
+                        remember(weeks) {
                             programWeekRepository.weekPageIndex(seasonYear, weeks)
                         }
                     val pagerState =
@@ -143,7 +145,7 @@ fun ProgramPhoneScreen(
                     LaunchedEffect(pagerState, seasonYear, weeks) {
                         snapshotFlow { pagerState.currentPage }.collect { page ->
                             weeks.getOrNull(page)?.let { week ->
-                                programWeekRepository.saveSelectedWeek(seasonYear, week.id)
+                                programWeekRepository.saveSelectedWeek(seasonYear, week)
                             }
                         }
                     }
@@ -216,6 +218,7 @@ fun ProgramPhoneScreen(
                                 .fillMaxWidth()
                                 .padding(top = 10.dp, bottom = 14.dp),
                     )
+                    }
                 }
             }
         }
@@ -246,7 +249,7 @@ fun ProgramTabletScreen(
 
     LaunchedEffect(selectedWeek, seasonYear) {
         val week = selectedWeek ?: return@LaunchedEffect
-        programWeekRepository.saveSelectedWeek(seasonYear, week.id)
+        programWeekRepository.saveSelectedWeek(seasonYear, week)
     }
 
     LaunchedEffect(programFocusGeneration, weeks, seasonYear) {
