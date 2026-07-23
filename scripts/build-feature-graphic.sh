@@ -1,68 +1,65 @@
 #!/usr/bin/env bash
-# Builds a 1024x500 Play Store feature graphic (2026 navy/pink + week 1 posters).
+# Builds a 1024×500 Play Store feature graphic from a real app screenshot.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-POSTERS="$ROOT/store-assets/posters-2026"
+SHOT="${1:-$ROOT/store-assets/phone-01-program.png}"
 OUT="$ROOT/store-assets/play-store-feature-graphic.png"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 NAVY='#192B59'
-NAVY_SOFT='#263A6C'
 PINK='#DC82A5'
 TITLE='#FFF8FA'
-MUTED='#B0B8CC'
 
-poster() {
-  local src="$1" out="$2" w="$3" h="$4"
-  magick "$src" -resize "${w}x${h}^" -gravity center -extent "${w}x${h}" \
-    \( -size "${w}x${h}" xc:none -fill black -draw "roundrectangle 0,0,${w},${h},16,16" \) \
-    -alpha set -compose CopyOpacity -composite +repage "$out"
-}
+if [[ ! -f "$SHOT" ]]; then
+  echo "Missing screenshot: $SHOT" >&2
+  exit 1
+fi
 
-W=1024
-H=2200
-magick -size "${W}x${H}" "xc:${NAVY}" "$TMP/screen.png"
+# Phone frame sized for the banner (shows program grid, trims status/nav chrome lightly).
+PHONE_W=300
+PHONE_H=460
+RADIUS=28
+FRAME=6
 
-magick "$TMP/screen.png" \
-  -font Helvetica-Bold -pointsize 42 -fill "$TITLE" \
-  -gravity north -annotate +0+72 'Programme 2026' \
+# Crop mid-screen content (drop status bar + bottom nav), then fit into the phone.
+magick "$SHOT" \
+  -gravity North -chop 0x72 \
+  -gravity South -chop 0x140 \
+  -resize "${PHONE_W}x${PHONE_H}^" -gravity center -extent "${PHONE_W}x${PHONE_H}" \
+  "$TMP/screen-raw.png"
+
+magick "$TMP/screen-raw.png" \
+  \( -size "${PHONE_W}x${PHONE_H}" xc:none \
+     -fill white -draw "roundrectangle 0,0 $((PHONE_W - 1)),$((PHONE_H - 1)) ${RADIUS},${RADIUS}" \) \
+  -alpha set -compose DstIn -composite \
   "$TMP/screen.png"
 
-PILL_W=300
-PILL_H=48
-PILL_X=$(((W - PILL_W) / 2))
-PILL_Y=130
-magick "$TMP/screen.png" \
-  -fill "$NAVY_SOFT" -draw "roundrectangle ${PILL_X},${PILL_Y},$((PILL_X + PILL_W)),$((PILL_Y + PILL_H)),24,24" \
-  -font Helvetica-Bold -pointsize 22 -fill "$TITLE" \
-  -gravity north -annotate +0+142 'Week 1 • 9-12 July' \
-  "$TMP/screen.png"
+OUTER_W=$((PHONE_W + FRAME * 2))
+OUTER_H=$((PHONE_H + FRAME * 2))
+OUTER_R=$((RADIUS + 4))
+magick -size "${OUTER_W}x${OUTER_H}" xc:none \
+  -fill '#0E1833' -draw "roundrectangle 0,0 $((OUTER_W - 1)),$((OUTER_H - 1)) ${OUTER_R},${OUTER_R}" \
+  "$TMP/bezel.png"
+magick "$TMP/bezel.png" "$TMP/screen.png" -gravity center -compose over -composite "$TMP/phone.png"
 
-PW=430
-PH=645
-GAP=36
-OX=$(((W - (PW * 2 + GAP)) / 2))
-OY=210
+# Soft pink glow behind the phone
+magick -size 1024x500 "xc:${NAVY}" \
+  \( -size 420x500 radial-gradient:"${PINK}-#192B5900" -channel A -evaluate multiply 0.22 +channel \) \
+  -gravity east -geometry +40+0 -compose over -composite \
+  "$TMP/bg.png"
 
-poster "$POSTERS/back-to-the-future.jpg" "$TMP/p1.png" "$PW" "$PH"
-poster "$POSTERS/la-famille-belier.jpg" "$TMP/p2.png" "$PW" "$PH"
-poster "$POSTERS/billy-elliot.jpg" "$TMP/p3.png" "$PW" "$PH"
-poster "$POSTERS/flow.jpg" "$TMP/p4.png" "$PW" "$PH"
+# Brand lockup (matches splash: pink name on navy)
+magick "$TMP/bg.png" \
+  -font Helvetica-Bold -pointsize 64 -fill "$PINK" \
+  -gravity West -annotate +72-36 'CinéTransat' \
+  -font Helvetica -pointsize 28 -fill "$TITLE" \
+  -gravity West -annotate +72+36 'Outdoor cinema · Geneva' \
+  "$TMP/phone.png" -gravity East -geometry +56+0 -compose over -composite \
+  -depth 8 "$OUT"
 
-ROW2_Y=$((OY + PH + 56))
-
-magick "$TMP/screen.png" \
-  "$TMP/p1.png" -geometry "+${OX}+${OY}" -composite \
-  "$TMP/p2.png" -geometry "+$((OX + PW + GAP))+${OY}" -composite \
-  "$TMP/p3.png" -geometry "+${OX}+${ROW2_Y}" -composite \
-  "$TMP/p4.png" -geometry "+$((OX + PW + GAP))+${ROW2_Y}" -composite \
-  "$TMP/screen.png"
-
-# Crop top to 1024x500
-magick "$TMP/screen.png" -crop "${W}x500+0+0" +repage -depth 8 "$OUT"
-magick "$OUT" -quality 95 "$ROOT/store-assets/play-store-feature-graphic.jpg"
+magick "$OUT" -quality 92 "$ROOT/store-assets/play-store-feature-graphic.jpg"
 
 echo "Wrote $OUT"
 echo "Wrote $ROOT/store-assets/play-store-feature-graphic.jpg"

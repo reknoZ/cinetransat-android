@@ -283,6 +283,7 @@ fun MovieDetailScreen(
     modifier: Modifier = Modifier,
     showUpNavigation: Boolean = true,
     showNavButtons: Boolean = true,
+    onDisplayedScreeningIdChange: (String?) -> Unit = {},
 ) {
     if (screenings.isEmpty()) return
 
@@ -299,6 +300,13 @@ fun MovieDetailScreen(
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { screenings.size })
     val screening = screenings[pagerState.currentPage]
     val appLanguage = rememberAppLanguage()
+
+    LaunchedEffect(screening.id) {
+        onDisplayedScreeningIdChange(screening.id)
+    }
+    DisposableEffect(Unit) {
+        onDispose { onDisplayedScreeningIdChange(null) }
+    }
 
     Scaffold(
         modifier = modifier,

@@ -2,6 +2,7 @@ package com.heewhack.cinetransat.ui.program
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -24,6 +25,7 @@ fun ProgramNavHost(
     modifier: Modifier = Modifier,
     pendingScreeningId: String? = null,
     onPendingScreeningHandled: () -> Unit = {},
+    onDisplayedScreeningIdChange: (String?) -> Unit = {},
 ) {
     val activity = LocalComponentActivity.current
     val windowSizeClass = calculateWindowSizeClass(activity = activity)
@@ -35,10 +37,15 @@ fun ProgramNavHost(
         val id = pendingScreeningId ?: return@LaunchedEffect
         if (programState.allScreenings.any { it.id == id }) {
             navController.navigate("detail/$id") {
+                popUpTo("program") { inclusive = false }
                 launchSingleTop = true
             }
             onPendingScreeningHandled()
         }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { onDisplayedScreeningIdChange(null) }
     }
 
     NavHost(
@@ -47,6 +54,9 @@ fun ProgramNavHost(
         modifier = modifier.fillMaxSize(),
     ) {
         composable("program") {
+            LaunchedEffect(Unit) {
+                onDisplayedScreeningIdChange(null)
+            }
             val onScreeningClick = { screeningId: String ->
                 navController.navigate("detail/$screeningId")
             }
@@ -79,6 +89,7 @@ fun ProgramNavHost(
                 screenings = screenings,
                 initialScreeningId = id,
                 onNavigateUp = { navController.navigateUp() },
+                onDisplayedScreeningIdChange = onDisplayedScreeningIdChange,
             )
         }
     }

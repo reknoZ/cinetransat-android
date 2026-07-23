@@ -65,6 +65,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.heewhack.cinetransat.data.AppLanguage
@@ -411,10 +412,10 @@ private fun WeekGrid(
                     .weight(1f),
         ) {
             val density = LocalDensity.current
-            val minGap = if (compact) 7.dp else 10.dp
+            val minGap = if (compact) 3.dp else 8.dp
             val posterTitleGap = 2.dp
-            // 0.88 was too small; 1.0 can clip titles — ~0.94 is a middle ground.
-            val posterWidthScale = if (compact) 0.94f else 0.92f
+            // Slightly smaller posters so the week pager fits above the nav bar.
+            val posterWidthScale = if (compact) 0.88f else 0.90f
 
             fun rowTitleHeight(width: androidx.compose.ui.unit.Dp, a: Int, b: Int): androidx.compose.ui.unit.Dp {
                 val wpx = with(density) { width.roundToPx() }
@@ -461,9 +462,11 @@ private fun WeekGrid(
             val colGap = horizontalSlack / 3f
 
             val verticalSlack = (maxHeight - row1Height - row2Height).coerceAtLeast(0.dp)
-            val topGap = verticalSlack / 3f
-            val rowGap = verticalSlack / 3f
-            val bottomGap = verticalSlack / 3f
+            val maxRowGap = if (compact) 4.dp else 8.dp
+            val rowGap = min(verticalSlack / 3f, maxRowGap)
+            val remainingSlack = (verticalSlack - rowGap).coerceAtLeast(0.dp)
+            val topGap = remainingSlack / 2f
+            val bottomGap = remainingSlack / 2f
 
             val posterSize = DpSize(posterW, posterH)
 

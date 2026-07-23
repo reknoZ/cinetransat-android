@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,7 +37,6 @@ import com.heewhack.cinetransat.ui.components.CalendarDayIcon
 import com.heewhack.cinetransat.ui.info.UsefulInfoScreen
 import com.heewhack.cinetransat.ui.program.ProgramNavHost
 import com.heewhack.cinetransat.ui.settings.SettingsScreen
-import com.heewhack.cinetransat.ui.today.TodayTabScreen
 import com.heewhack.cinetransat.ui.watchlist.WatchListNavHost
 import com.heewhack.cinetransat.ui.theme.FestivalAccentBright
 import com.heewhack.cinetransat.ui.theme.FestivalProgramTitle
@@ -50,21 +50,51 @@ fun CineTransatApp(
 ) {
     val programStore = LocalFestivalProgramStore.current
     val programState by programStore.state.collectAsStateWithLifecycle()
-    val showTodayTab = programState.allScreenings.screeningsToday().isNotEmpty()
+    val todayScreenings = programState.allScreenings.screeningsToday()
+    val showTodayTab = todayScreenings.isNotEmpty()
+    val todaysScreeningId = todayScreenings.firstOrNull()?.id
 
     val programTabIndex = if (showTodayTab) 1 else 0
     val watchlistTabIndex = programTabIndex + 1
     val infoTabIndex = watchlistTabIndex + 1
     val settingsTabIndex = infoTabIndex + 1
 
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    // Content host tab — Today is only a shortcut into Program, never its own screen.
+    var selectedTab by rememberSaveable { mutableIntStateOf(programTabIndex) }
     var previousShowTodayTab by remember { mutableStateOf(showTodayTab) }
+    var hasOpenedInitialToday by rememberSaveable { mutableStateOf(false) }
+    var shortcutPendingScreeningId by remember { mutableStateOf<String?>(null) }
+    var displayedProgramScreeningId by remember { mutableStateOf<String?>(null) }
+    var programResetToken by rememberSaveable { mutableIntStateOf(0) }
+
+    val isViewingTodaysScreening =
+        showTodayTab &&
+            todaysScreeningId != null &&
+            displayedProgramScreeningId == todaysScreeningId
+
+    val highlightedTab =
+        if (isViewingTodaysScreening) {
+            0
+        } else {
+            selectedTab
+        }
 
     LaunchedEffect(showTodayTab) {
         if (previousShowTodayTab && !showTodayTab && selectedTab > 0) {
             selectedTab--
         }
+        if (!showTodayTab && selectedTab == 0) {
+            selectedTab = programTabIndex
+        }
         previousShowTodayTab = showTodayTab
+    }
+
+    LaunchedEffect(showTodayTab, todaysScreeningId, programTabIndex) {
+        if (!hasOpenedInitialToday && showTodayTab && todaysScreeningId != null) {
+            shortcutPendingScreeningId = todaysScreeningId
+            selectedTab = programTabIndex
+            hasOpenedInitialToday = true
+        }
     }
 
     LaunchedEffect(pendingScreeningId, programTabIndex) {
@@ -72,6 +102,20 @@ fun CineTransatApp(
             selectedTab = programTabIndex
         }
     }
+
+    fun openTodaysScreening() {
+        val id = todaysScreeningId ?: return
+        shortcutPendingScreeningId = id
+        selectedTab = programTabIndex
+    }
+
+    fun showProgramGrid() {
+        selectedTab = programTabIndex
+        shortcutPendingScreeningId = null
+        programResetToken++
+    }
+
+    val effectivePendingScreeningId = shortcutPendingScreeningId ?: pendingScreeningId
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -90,8 +134,8 @@ fun CineTransatApp(
                     )
                 if (showTodayTab) {
                     NavigationBarItem(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
+                        selected = highlightedTab == 0,
+                        onClick = { openTodaysScreening() },
                         colors = tabColors,
                         icon = {
                             CalendarDayIcon(
@@ -107,8 +151,8 @@ fun CineTransatApp(
                     )
                 }
                 NavigationBarItem(
-                    selected = selectedTab == programTabIndex,
-                    onClick = { selectedTab = programTabIndex },
+                    selected = highlightedTab == programTabIndex,
+                    onClick = { showProgramGrid() },
                     colors = tabColors,
                     icon = {
                         Icon(
@@ -125,7 +169,7 @@ fun CineTransatApp(
                     },
                 )
                 NavigationBarItem(
-                    selected = selectedTab == watchlistTabIndex,
+                    selected = highlightedTab == watchlistTabIndex,
                     onClick = { selectedTab = watchlistTabIndex },
                     colors = tabColors,
                     icon = {
@@ -143,7 +187,7 @@ fun CineTransatApp(
                     },
                 )
                 NavigationBarItem(
-                    selected = selectedTab == infoTabIndex,
+                    selected = highlightedTab == infoTabIndex,
                     onClick = { selectedTab = infoTabIndex },
                     colors = tabColors,
                     icon = {
@@ -161,7 +205,7 @@ fun CineTransatApp(
                     },
                 )
                 NavigationBarItem(
-                    selected = selectedTab == settingsTabIndex,
+                    selected = highlightedTab == settingsTabIndex,
                     onClick = { selectedTab = settingsTabIndex },
                     colors = tabColors,
                     icon = {
@@ -188,20 +232,20 @@ fun CineTransatApp(
                     .padding(innerPadding),
         ) {
             when (selectedTab) {
-                0 ->
-                    if (showTodayTab) {
-                        TodayTabScreen()
-                    } else {
+                programTabIndex ->
+                    key(programResetToken) {
                         ProgramNavHost(
-                            pendingScreeningId = pendingScreeningId,
-                            onPendingScreeningHandled = onPendingScreeningHandled,
+                            pendingScreeningId = effectivePendingScreeningId,
+                            onPendingScreeningHandled = {
+                                if (shortcutPendingScreeningId != null) {
+                                    shortcutPendingScreeningId = null
+                                } else {
+                                    onPendingScreeningHandled()
+                                }
+                            },
+                            onDisplayedScreeningIdChange = { displayedProgramScreeningId = it },
                         )
                     }
-                programTabIndex ->
-                    ProgramNavHost(
-                        pendingScreeningId = pendingScreeningId,
-                        onPendingScreeningHandled = onPendingScreeningHandled,
-                    )
                 watchlistTabIndex ->
                     WatchListNavHost(onRequestCalendarPermissions = onRequestCalendarPermissions)
                 infoTabIndex -> UsefulInfoScreen()
