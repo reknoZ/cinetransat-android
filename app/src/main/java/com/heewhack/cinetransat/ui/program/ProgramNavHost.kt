@@ -24,6 +24,7 @@ import com.heewhack.cinetransat.ui.detail.MovieDetailScreen
 fun ProgramNavHost(
     modifier: Modifier = Modifier,
     pendingScreeningId: String? = null,
+    pendingOpenToken: Int = 0,
     onPendingScreeningHandled: () -> Unit = {},
     onDisplayedScreeningIdChange: (String?) -> Unit = {},
 ) {
@@ -33,13 +34,12 @@ fun ProgramNavHost(
     val programStore = LocalFestivalProgramStore.current
     val programState by programStore.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(pendingScreeningId, programState.allScreenings) {
+    LaunchedEffect(pendingScreeningId, pendingOpenToken, programState.allScreenings) {
         val id = pendingScreeningId ?: return@LaunchedEffect
         if (programState.allScreenings.any { it.id == id }) {
-            navController.navigate("detail/$id") {
-                popUpTo("program") { inclusive = false }
-                launchSingleTop = true
-            }
+            // Always rebuild detail: pager <> keeps the same route, so singleTop would no-op.
+            navController.popBackStack("program", inclusive = false)
+            navController.navigate("detail/$id")
             onPendingScreeningHandled()
         }
     }

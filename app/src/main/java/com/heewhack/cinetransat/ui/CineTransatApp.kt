@@ -66,6 +66,7 @@ fun CineTransatApp(
     var shortcutPendingScreeningId by remember { mutableStateOf<String?>(null) }
     var displayedProgramScreeningId by remember { mutableStateOf<String?>(null) }
     var programResetToken by rememberSaveable { mutableIntStateOf(0) }
+    var todayOpenToken by remember { mutableIntStateOf(0) }
 
     val isViewingTodaysScreening =
         showTodayTab &&
@@ -105,6 +106,7 @@ fun CineTransatApp(
 
     fun openTodaysScreening() {
         val id = todaysScreeningId ?: return
+        todayOpenToken++
         shortcutPendingScreeningId = id
         selectedTab = programTabIndex
     }
@@ -236,6 +238,7 @@ fun CineTransatApp(
                     key(programResetToken) {
                         ProgramNavHost(
                             pendingScreeningId = effectivePendingScreeningId,
+                            pendingOpenToken = todayOpenToken,
                             onPendingScreeningHandled = {
                                 if (shortcutPendingScreeningId != null) {
                                     shortcutPendingScreeningId = null
