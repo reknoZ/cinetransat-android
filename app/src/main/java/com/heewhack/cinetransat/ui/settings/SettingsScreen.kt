@@ -28,8 +28,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -70,6 +72,8 @@ fun SettingsScreen(
             AppLanguage.Fr -> "fr"
         }
     val seasonYear = programState.publicConfig.currentSeasonYear
+    // TODO: Re-enable after Play Console products are configured.
+    // var showSupportSheet by remember { mutableStateOf(false) }
     val languageOptions =
         listOf(
             "fr" to stringResource(R.string.language_french),
@@ -224,6 +228,45 @@ fun SettingsScreen(
 
             item { HorizontalDivider(color = pink.copy(alpha = 0.15f)) }
 
+            // TODO: Re-enable after Play Console products are configured.
+            // item {
+            //     Column(
+            //         modifier =
+            //             Modifier
+            //                 .fillMaxWidth()
+            //                 .padding(horizontal = 16.dp, vertical = 8.dp),
+            //         verticalArrangement = Arrangement.spacedBy(8.dp),
+            //     ) {
+            //         Text(
+            //             text = stringResource(R.string.settings_support_section),
+            //             style = MaterialTheme.typography.titleSmall,
+            //             color = pink,
+            //         )
+            //         CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+            //             TextButton(
+            //                 onClick = { showSupportSheet = true },
+            //                 modifier = Modifier.fillMaxWidth(),
+            //                 contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
+            //                 colors = textButtonColors,
+            //             ) {
+            //                 Text(
+            //                     text = stringResource(R.string.settings_support_open),
+            //                     modifier = Modifier.fillMaxWidth(),
+            //                     textAlign = TextAlign.Start,
+            //                     maxLines = 1,
+            //                 )
+            //             }
+            //         }
+            //         Text(
+            //             text = stringResource(R.string.support_intro),
+            //             style = MaterialTheme.typography.bodySmall,
+            //             color = mutedPink,
+            //         )
+            //     }
+            // }
+            //
+            // item { HorizontalDivider(color = pink.copy(alpha = 0.15f)) }
+
             item {
                 Column(
                     modifier =
@@ -242,6 +285,19 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(0.dp),
                         ) {
+                            TextButton(
+                                onClick = { AppSupport.openDeveloperWebsite(context) },
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
+                                colors = textButtonColors,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.settings_developer_website),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Start,
+                                    maxLines = 1,
+                                )
+                            }
                             TextButton(
                                 onClick = {
                                     runCatching {
@@ -304,5 +360,10 @@ fun SettingsScreen(
             }
         }
     }
+
+    // TODO: Re-enable after Play Console products are configured.
+    // if (showSupportSheet) {
+    //     SupportDeveloperSheet(onDismiss = { showSupportSheet = false })
+    // }
 }
 

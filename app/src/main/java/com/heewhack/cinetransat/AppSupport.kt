@@ -8,6 +8,7 @@ import android.os.Build
 
 object AppSupport {
     const val FEEDBACK_EMAIL = "feedback@heewhack.com"
+    const val DEVELOPER_WEBSITE = "https://www.heewhack.com"
 
     private fun packageInfo(context: Context) =
         runCatching {
@@ -83,5 +84,13 @@ object AppSupport {
             }
         runCatching { context.startActivity(marketIntent) }
             .onFailure { context.startActivity(webIntent) }
+    }
+
+    fun openDeveloperWebsite(context: Context) {
+        val intent =
+            Intent(Intent.ACTION_VIEW, Uri.parse(DEVELOPER_WEBSITE)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        context.startActivity(intent)
     }
 }

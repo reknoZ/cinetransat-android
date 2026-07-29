@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -44,17 +45,30 @@ class ProgramWeekRepository(
         }
     }
 
+    /**
+     * Page to show for [seasonYear]:
+     * - Season switch → same week number if present, else last week
+     * - Same season → restore saved week unless that week is fully in the past, then current/upcoming
+     */
     fun weekPageIndex(
         seasonYear: Int,
         weeks: List<FestivalWeek>,
     ): Int {
         if (weeks.isEmpty()) return 0
-        val saved = _selection.value ?: return 0
-        if (saved.seasonYear == seasonYear) {
-            weeks.indexOfFirst { it.id == saved.weekId }.takeIf { it >= 0 }?.let { return it }
+        val currentIdx = weeks.indexOfWeekFor().coerceIn(0, weeks.lastIndex)
+        val saved = _selection.value ?: return currentIdx
+
+        if (saved.seasonYear != seasonYear) {
+            weeks.indexOfFirst { it.weekNumber == saved.weekNumber }.takeIf { it >= 0 }?.let { return it }
+            return weeks.lastIndex
         }
-        weeks.indexOfFirst { it.weekNumber == saved.weekNumber }.takeIf { it >= 0 }?.let { return it }
-        return weeks.lastIndex
+
+        val savedIdx =
+            weeks.indexOfFirst { it.id == saved.weekId }.takeIf { it >= 0 }
+                ?: weeks.indexOfFirst { it.weekNumber == saved.weekNumber }.takeIf { it >= 0 }
+                ?: return currentIdx
+
+        return if (weeks[savedIdx].isFullyPassed()) currentIdx else savedIdx
     }
 
     fun selectedWeek(
@@ -94,4 +108,9 @@ class ProgramWeekRepository(
         fun weekNumberFromId(weekId: String): Int? =
             WeekNumberInId.find(weekId)?.groupValues?.getOrNull(1)?.toIntOrNull()
     }
+}
+
+private fun FestivalWeek.isFullyPassed(today: LocalDate = LocalDate.now(FestivalZone)): Boolean {
+    val days = orderedScreenings.map { it.festivalDay }
+    return days.isNotEmpty() && days.all { it < today }
 }

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -20,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -41,6 +43,7 @@ import com.heewhack.cinetransat.ui.ProvideAppLocale
 import com.heewhack.cinetransat.ui.CineTransatApp
 import com.heewhack.cinetransat.ui.splash.FestivalSplashScreen
 import com.heewhack.cinetransat.ui.theme.CineTransatTheme
+import com.heewhack.cinetransat.ui.theme.FestivalProgramBackground
 import com.heewhack.cinetransat.calendar.ScreeningCalendarService
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -52,7 +55,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pendingScreeningId.value = intent.screeningIdFromNotification()
-        enableEdgeToEdge()
+        val festivalScrim = FestivalProgramBackground.toArgb()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(festivalScrim),
+            navigationBarStyle = SystemBarStyle.dark(festivalScrim),
+        )
         WindowInsetsControllerCompat(window, window.decorView).apply {
             hide(WindowInsetsCompat.Type.navigationBars())
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE

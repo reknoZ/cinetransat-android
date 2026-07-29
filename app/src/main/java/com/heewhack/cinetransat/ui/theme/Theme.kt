@@ -10,7 +10,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowInsetsControllerCompat
 
@@ -76,9 +75,9 @@ fun CineTransatTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
+            // Prefer SystemBarStyle via enableEdgeToEdge() — do not call the deprecated
+            // Window.setStatusBarColor / setNavigationBarColor APIs (Play Console warning).
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb()
-            window.navigationBarColor = colorScheme.background.toArgb()
             val controller = WindowInsetsControllerCompat(window, view)
             controller.isAppearanceLightStatusBars = false
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
